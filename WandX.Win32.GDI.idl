@@ -1,0 +1,1053 @@
+#pragma region GObject
+template<class AnyChild, class BaseHandle = HGDIOBJ>
+class GObjectBase;
+using GObject = GObjectBase<void>;
+template<class AnyChild, class BaseHandle>
+class GObjectBase : public ExtendShim<GObjectBase<AnyChild, BaseHandle>, AnyChild> {
+	misuse_assert((std::is_convertible_v<BaseHandle, HGDIOBJ>),
+				 "BaseHandle must can be converted to HANDLE");
+public:
+	using Child = Chain<GObjectBase, AnyChild>;
+protected:
+	proxy_basetype(GObjectBase);
+	mutable HGDIOBJ hobj = O;
+	GObjectBase(HGDIOBJ h) : hobj(h) {}
+	GObjectBase(const GObjectBase &h) : hobj(h.hobj) ret_to(h.hobj = O);
+public:
+	GObjectBase() {}
+	GObjectBase(Nu) {}
+	GObjectBase(GObjectBase &obj) : hobj(obj.hobj) { obj.hobj = O; }
+	GObjectBase(GObjectBase &&obj) : hobj(obj.hobj) { obj.hobj = O; }
+	~GObjectBase() ret_to(Delete());
+public:
+	inline void Delete() {
+		if (hobj)
+			WandX::DeleteObject(hobj);
+		hobj = O;
+	}
+public:
+	inline operator BaseHandle() const ret_as(ref_cast<BaseHandle>(hobj));
+	inline Child &operator=(Child &obj) ret_to_child(std::swap(obj.hobj, hobj));
+	inline Child &operator=(Child &&obj) ret_to_child(std::swap(obj.hobj, hobj));
+	inline const Child &operator=(const Child &obj) const ret_to_child(std::swap(obj.hobj, hobj));
+public:
+	static inline auto &Attach(BaseHandle &hObj) ret_as(ref_cast<AnyChild>(hObj));
+	static inline const auto &Attach(const BaseHandle &hObj) ret_as(ref_cast<const AnyChild>(hObj));
+	static inline void AutoDelete(BaseHandle &hObj) ret_to(if (hObj) (WandX::DeleteObject(hObj), hObj = O));
+};
+using CGObject = ProxyView<GObject>;
+#pragma endregion
+
+#pragma region Bitmap
+enum_class(BitmapCompressions , DWORD        ,
+		   RGB                = BI_RGB       ,
+		   RLE8               = BI_RLE8      ,
+		   RLE4               = BI_RLE4      ,
+		   BitFields          = BI_BITFIELDS ,
+		   JPEG               = BI_JPEG      ,
+		   PNG                = BI_PNG       );
+#pragma pack(2)
+class BitmapHeader : protected BITMAPFILEHEADER, protected BITMAPINFO {
+public:
+	BitmapHeader() : BITMAPFILEHEADER{ 0 }, BITMAPINFO{ { 0 } } {
+		this->bfType = *(const WORD *)"BM";
+		this->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		this->bmiHeader.biCompression = BI_RGB;
+	}
+public: // Property - PaletteSize
+	/* W */ inline auto &PaletteSize(DWORD dwSize) ret_to_self(this->bfOffBits = dwSize + sizeof(*this) - 4);
+	/* R */ inline DWORD PaletteSize() const ret_as(this->bfOffBits - sizeof(*this) - 4);
+public: // Property - ColorsSize
+	/* W */ inline auto &ColorsSize(DWORD dwSize) ret_to_self(this->bfSize = this->bfOffBits + dwSize);
+	/* R */ inline DWORD ColorsSize() const ret_as(this->bfSize - this->bfOffBits);
+public: // Property - FileSize
+	/* R */ inline DWORD FileSize() const ret_as(this->bfSize);
+public: // Property - Width
+	/* W */ inline auto &Width(LONG biWidth) ret_to_self(this->bmiHeader.biWidth = biWidth);
+	/* R */ inline LONG  Width() const ret_as(this->bmiHeader.biWidth);
+public: // Property - Height
+	/* W */ inline auto &Height(LONG biHeight) ret_to_self(this->bmiHeader.biHeight = biHeight);
+	/* R */ inline LONG  Height() const ret_as(this->bmiHeader.biHeight);
+public: // Property - Size
+	/* W */ inline auto &Size(WandX::Size sz) ret_to_self(bmiHeader.biWidth = sz.cx, bmiHeader.biHeight = sz.cy);
+	/* R */ inline WandX::Size Size() const ret_as({ bmiHeader.biWidth, bmiHeader.biHeight });
+public: // Property - Compression
+	/* W */ inline auto &Compression(BitmapCompressions biCompression) ret_to_self(this->bmiHeader.biCompression = biCompression.yield());
+	/* R */ inline BitmapCompressions Compression() const ret_as(reuse_cast<BitmapCompressions>(this->bmiHeader.biCompression));
+public: // Property - SizeImage
+	/* R */ inline DWORD SizeImage() const ret_as(this->bmiHeader.biSizeImage);
+public: // Property - PixelsPerMeter
+	/* W */ inline auto &PixelsPerMeter(WandX::Size sz) ret_to_self(bmiHeader.biXPelsPerMeter = sz.cx, bmiHeader.biYPelsPerMeter = sz.cy);
+	/* R */ inline WandX::Size PixelsPerMeter() const ret_as({ bmiHeader.biXPelsPerMeter, bmiHeader.biYPelsPerMeter });
+public: // Property - Planes
+	/* W */ inline auto &Planes(WORD biPlanes) ret_to_self(this->bmiHeader.biPlanes = biPlanes);
+	/* R */ inline WORD  Planes() const ret_as(this->bmiHeader.biPlanes);
+public: // Property - BitsPerPixel
+	/* W */ inline auto &BitsPerPixel(WORD biBitCount) ret_to_self(this->bmiHeader.biBitCount = biBitCount);
+	/* R */ inline WORD  BitsPerPixel() const ret_as(this->bmiHeader.biBitCount);
+public: // Property - ColorUsed
+	/* W */ inline auto &ColorUsed(DWORD biClrUsed) ret_to_self(this->bmiHeader.biClrUsed = biClrUsed);
+	/* R */ inline DWORD ColorUsed() const ret_as(this->bmiHeader.biClrUsed);
+public: // Property - ColorImportant
+	/* W */ inline auto &ColorImportant(DWORD biClrImportant) ret_to_self(this->bmiHeader.biClrImportant = biClrImportant);
+	/* R */ inline DWORD ColorImportant() const ret_as(this->bmiHeader.biClrImportant);
+public: // Property - PaletteStart
+	// /* W */ inline auto PaletteStart() ret_to_self(this->bmiColors);
+	/* R */ inline auto PaletteStart() const ret_as(this->bmiColors);
+public: // Property - Colors
+	// /* W */ inline void *ColorsStart() ret_to_self(((Int8U *)PaletteStart()) + PaletteSize());
+	/* R */ inline void *ColorsStart() const ret_as(((Int8U *)PaletteStart()) + PaletteSize());
+public:
+	inline operator LPBITMAPFILEHEADER() ret_as(this);
+	inline operator const BITMAPFILEHEADER *() const ret_as(this);
+	inline operator LPBITMAPINFO() ret_as(this);
+	inline operator const BITMAPINFO *() const ret_as(this);
+};
+#pragma pack()
+class BitmapLogic : public StructShim<BITMAP> {
+public:
+	using Super = StructShim<BITMAP>;
+public:
+	BitmapLogic() {}
+	proxy_prop_sync(Width,bmWidth,LONG);
+	proxy_prop_sync(Height,bmHeight,LONG);
+public: // Property - Size
+	/* W */ inline auto &Size(WandX::Size sz) ret_to_self(self->bmWidth = sz.cx, self->bmHeight = sz.cy);
+	/* R */ inline WandX::Size Size() const ret_as({ self->bmWidth, self->bmHeight });
+	proxy_prop_sync(WidthBytes,bmWidthBytes,LONG);
+	proxy_prop_sync(Planes,bmPlanes,WORD);
+	proxy_prop_sync(BitsPerPixel,bmBitsPixel,WORD);
+	proxy_prop_sync(Colors,bmBits,LPVOID);
+public:
+	inline HBITMAP Create() const ret_as(WandX::CreateBitmapIndirect(this));
+	inline operator HBITMAP() const ret_as(Create());
+};
+class BaseOf_GDI(Bitmap, HBITMAP) {
+public:
+	using Header = BitmapHeader;
+	using File = BitmapHeader;
+	using Logic = BitmapLogic;
+	using Super = GObjectBase<Bitmap, HBITMAP>;
+protected:
+	proxy_basetype(Bitmap);
+	Bitmap(HBITMAP h) : Super(h) {}
+	Bitmap(const Bitmap & b) : Super(b) {}
+public:
+	Bitmap() {}
+	Bitmap(Nu) {}
+	Bitmap(Bitmap & b) : Super(b) {}
+	Bitmap(Bitmap && b) : Super(b) {}
+public:
+	class CreateStruct {
+		int nWidth, nHeight;
+		UINT nPlanes = 1, nBitsPerPixel = 32;
+		LPCVOID lpBits = O;
+	public:
+		CreateStruct(WandX::Size s) : nWidth(s.cx), nHeight(s.cy) {}
+	public: // Property - Width
+		/* W */ inline auto &Width(LONG nWidth) ret_to_self(this->nWidth = nWidth);
+		/* R */ inline LONG  Width() const ret_as(this->nWidth);
+	public: // Property - Height
+		/* W */ inline auto &Height(LONG nHeight) ret_to_self(this->nHeight = nHeight);
+		/* R */ inline LONG  Height() const ret_as(this->nHeight);
+	public: // Property - Size
+		/* W */ inline auto &Size(WandX::Size sz) ret_to_self(this->nWidth = sz.cx, this->nHeight = sz.cy);
+		/* R */ inline WandX::Size Size() const ret_as({ this->nWidth, this->nHeight });
+	public: // Property - Planes
+		/* W */ inline auto &Planes(UINT nPlanes) ret_to_self(this->nPlanes = nPlanes);
+		/* R */ inline UINT  Planes() const ret_as(this->nPlanes);
+	public: // Property - BitsPerPixel
+		/* W */ inline auto &BitsPerPixel(UINT nBitsPerPixel) ret_to_self(this->nBitsPerPixel = nBitsPerPixel);
+		/* R */ inline UINT  BitsPerPixel() const ret_as(this->nBitsPerPixel);
+	public: // Property - Colors
+		/* W */ inline auto &Colors(LPCVOID lpBits) ret_to_self(this->lpBits = lpBits);
+		/* R */ inline LPCVOID Colors() const ret_as(this->lpBits);
+	public:
+		inline Bitmap Create() const ret_as(WandX::CreateBitmap(nWidth, nHeight, nPlanes, nBitsPerPixel, lpBits));
+		inline operator Bitmap() const ret_as(Create());
+	};
+	static inline CreateStruct Create(WandX::Size s = 0) ret_as(s);
+	static inline Bitmap Create(const BITMAPINFO * pbi, void **ppbits, HANDLE hSection = O, DWORD offset = 0) ret_as(WandX::CreateDIBSection(O, pbi, DIB_RGB_COLORS, ppbits, hSection, offset));
+	static inline Bitmap Create(const BITMAPINFO * pbi, HANDLE hSection = O, DWORD offset = 0) ret_as(WandX::CreateDIBSection(O, pbi, DIB_RGB_COLORS, O, hSection, offset));
+	static inline Bitmap From(HDC hDC, WandX::Size s) ret_as(WandX::CreateCompatibleBitmap(hDC, s.cx, s.cy));
+public:
+	//inline auto &Restretch(WandX::Size sz) ret_to_self((Super::hobj = (HBITMAP)CopyImage(self, IMAGE_BITMAP, sz.cx, sz.cy, LR_DEFAULTSIZE)));
+	//inline Bitmap StretchNew(WandX::Size sz) const ret_as((HBITMAP)CopyImage(self, IMAGE_BITMAP, sz.cx, sz.cy, LR_DEFAULTCOLOR));
+	//inline Bitmap Clone() const ret_as(StretchNew(Size()));
+#pragma region Properties
+public: // Property - Size
+	/* R */ inline WandX::Size Size() const ret_to(WandX::Size sz, WandX::GetBitmapDimensionEx(self, &sz), sz);
+public: // Property - SizeBytes
+	/* R */ inline SizeT SizeBytes() const {
+		auto &&log = Log();
+		return (((log.Width() * log.Planes() /* nPlanes */ * log.BitsPerPixel() /* nBitCount */ + 15) >> 4) << 1) * log.Height();
+	}
+public: // Property - Colors
+	/* W */ inline auto &GetColors(void *lpBits, DWORD cb) const ret_to_self(WandX::GetBitmapBits(self, cb, lpBits));
+	/* R */ inline auto &SetColors(const void *lpBits, DWORD cb) ret_to_self(WandX::SetBitmapBits(self, cb, lpBits));
+public: // Property - Log
+	inline Logic Log() const ret_to(Logic log, GetObject(self, sizeof(log), reinterpret_cast<LPSTR>(&log)), log);
+#pragma endregion
+public:
+	using Super::operator=;
+};
+using CBitmap = ProxyView<Bitmap>;
+#pragma endregion
+
+#pragma region Font
+enum_flags(FontType         , WORD                        ,
+		   Simulated        = SIMULATED_FONTTYPE          ,
+		   Printer          = PRINTER_FONTTYPE            ,
+		   Screen           = SCREEN_FONTTYPE             ,
+		   Bold             = BOLD_FONTTYPE               ,
+		   Italic           = ITALIC_FONTTYPE             ,
+		   Regular          = REGULAR_FONTTYPE          /*,
+		   PS_OpenType      = PS_OPENTYPE_FONTTYPE        ,
+		   TT_OpenType      = TT_OPENTYPE_FONTTYPE        ,
+		   Type1            = TYPE1_FONTTYPE              ,
+		   Symbol           = SYMBOL_FONTTYPE           */);
+enum_class(CharSets         , BYTE                        ,
+		   ANSI             = ANSI_CHARSET                ,
+		   Default          = DEFAULT_CHARSET             ,
+		   Symbol           = SYMBOL_CHARSET              ,
+		   ShiftJIS         = SHIFTJIS_CHARSET            ,
+		   Hangeul          = HANGEUL_CHARSET             ,
+		   Hangul           = HANGUL_CHARSET              ,
+		   GB2312           = GB2312_CHARSET              ,
+		   ChineseBig5      = CHINESEBIG5_CHARSET         ,
+		   OEM              = OEM_CHARSET                 ,
+		   Johab            = JOHAB_CHARSET               ,
+		   Hebrew           = HEBREW_CHARSET              ,
+		   Arabic           = ARABIC_CHARSET              ,
+		   Greek            = GREEK_CHARSET               ,
+		   Turkish          = TURKISH_CHARSET             ,
+		   Vietnamese       = VIETNAMESE_CHARSET          ,
+		   Thai             = THAI_CHARSET                ,
+		   EastEurope       = EASTEUROPE_CHARSET          ,
+		   Russian          = RUSSIAN_CHARSET             ,
+		   Mac              = MAC_CHARSET                 ,
+		   Baltic           = BALTIC_CHARSET              );
+enum_class(OutPrecis        , BYTE                        , 
+		   Default          = OUT_DEFAULT_PRECIS          ,
+		   String           = OUT_STRING_PRECIS           ,
+		   Character        = OUT_CHARACTER_PRECIS        ,
+		   Stroke           = OUT_STROKE_PRECIS           ,
+		   TrueType         = OUT_TT_PRECIS               ,
+		   Device           = OUT_DEVICE_PRECIS           ,
+		   Raster           = OUT_RASTER_PRECIS           ,
+		   TrueTypeOnly     = OUT_TT_ONLY_PRECIS          ,
+		   Outline          = OUT_OUTLINE_PRECIS          ,
+		   ScreenOutline    = OUT_SCREEN_OUTLINE_PRECIS   ,
+		   PostScriptOnly   = OUT_PS_ONLY_PRECIS          );
+enum_flags(ClipPrecis       , BYTE                        ,
+		   Default          = CLIP_DEFAULT_PRECIS         ,
+		   Character        = CLIP_CHARACTER_PRECIS       ,
+		   Stroke           = CLIP_STROKE_PRECIS          ,
+		   Mask             = CLIP_MASK                   ,
+		   LH_Angles        = CLIP_LH_ANGLES              ,
+		   TT_Always        = CLIP_TT_ALWAYS              ,
+		   DFA_Disable      = CLIP_DFA_DISABLE            ,
+		   Embedded         = CLIP_EMBEDDED               );
+enum_class(Qualities        , BYTE                        ,
+		   Default          = DEFAULT_QUALITY             ,
+		   Draf             = DRAFT_QUALITY               ,
+		   Proof            = PROOF_QUALITY               ,
+		   NonAntiAliased   = NONANTIALIASED_QUALITY      ,
+		   AntiAliased      = ANTIALIASED_QUALITY         ,
+		   ClearType        = CLEARTYPE_QUALITY           ,
+		   ClearTypeNatural = CLEARTYPE_NATURAL_QUALITY   );
+enum_class(FontPitches      , BYTE                        ,
+		   Default          = DEFAULT_PITCH               ,
+		   Fixed            = FIXED_PITCH                 ,
+		   Variable         = VARIABLE_PITCH              ,
+		   Mono             = MONO_FONT                   );
+enum_class(FontFamilies     , BYTE                        ,
+		   DontCare         = FF_DONTCARE                 ,
+		   Roman            = FF_ROMAN                    ,
+		   Swiss            = FF_SWISS                    ,
+		   Modern           = FF_MODERN                   ,
+		   Script           = FF_SCRIPT                   ,
+		   Decorative       = FF_DECORATIVE               );
+template<bool IsUnicode>
+class FontLogicX : public StructShim<structx(LOGFONT)> {
+	using_structx(LOGFONT);
+	using TCHAR = XCHAR<IsUnicode>;
+	using String = StringBase<TCHAR>;
+public:
+	using Super = StructShim<LOGFONT>;
+public:
+	FontLogicX() {}
+	FontLogicX(const LOGFONT &lf) : Super(lf) {}
+public: // Properties - Height
+proxy_prop_sync(Height,lfHeight,LONG);
+public: // Properties - Width
+proxy_prop_sync(Width,lfWidth,LONG);
+public: // Properties - Escapement
+proxy_prop_sync(Escapement,lfEscapement,LONG);
+public: // Properties - Orientation
+proxy_prop_sync(Orientation,lfOrientation,LONG);
+public: // Properties - Weight
+proxy_prop_sync(Weight,lfWeight,LONG);
+public: // Properties - Italic
+proxy_prop_sync(Italic,lfItalic,bool);
+public: // Properties - Underline
+proxy_prop_sync(Underline,lfUnderline,bool);
+public: // Properties - StrikeOut
+proxy_prop_sync(StrikeOut,lfStrikeOut,bool);
+public: // Properties - CharSet
+	proxy_prop_set(CharSet,lfCharSet,CharSets);
+	/* R */ inline CharSets CharSet() const ret_as(reuse_cast<CharSets>(self->lfCharSet));
+public: // Properties - OutPrecision
+	proxy_prop_set(OutPrecision,lfOutPrecision,OutPrecis);
+	/* R */ inline OutPrecis OutPrecision() const ret_as(reuse_cast<OutPrecis>(self->lfOutPrecision));
+public: // Properties - ClipPrecision
+	proxy_prop_set(ClipPrecision,lfClipPrecision,ClipPrecis);
+	/* R */ inline ClipPrecis ClipPrecision() const ret_as(reuse_cast<ClipPrecis>(self->lfClipPrecision));
+public: // Properties - Quality
+	proxy_prop_set(Quality,lfQuality,Qualities);
+	/* R */ inline Qualities Quality() const ret_as(reuse_cast<Qualities>(self->lfQuality));
+public: // Properties - Pitch
+	/* W */ inline auto&Pitch(FontPitches lfPitch) ret_to_self(self->lfPitchAndFamily &= 0xF0, self->lfPitchAndFamily |= lfPitch.yield());
+	/* R */ inline FontPitches Pitch() const ret_as(reuse_cast<FontPitches>((BYTE)(self->lfPitchAndFamily & 0x0F)));
+public: // Properties - Family
+	/* W */ inline auto&Family(FontFamilies lfFamily) ret_to_self(self->lfPitchAndFamily &= 0x0F, self->lfPitchAndFamily |= lfFamily.yield());
+	/* R */ inline FontFamilies Family() const ret_as(reuse_cast<FontFamilies>((BYTE)(self->lfPitchAndFamily & 0xF0)));
+public: // Properties - FaceName
+	/* W */ inline auto &FaceName(String name) ret_to_self(String(self->lfFaceName).Copy(name));
+	/* R */ inline const String FaceName() const ret_as(CString(self->lfFaceName, LF_FACESIZE));
+};
+using FontLogic = FontLogicX<IsUnicode>;
+using FontLogicA = FontLogicX<false>;
+using FontLogicW = FontLogicX<true>;
+using CFontLogic = ProxyView<FontLogic>;
+using CFontLogicA = ProxyView<FontLogicA>;
+using CFontLogicW = ProxyView<FontLogicW>;
+using FontLog = FontLogic;
+using FontLogA = FontLogicA;
+using FontLogW = FontLogicW;
+using CFontLog = CFontLogic;
+using CFontLogA = CFontLogicA;
+using CFontLogW = CFontLogicW;
+using LogFont = FontLogic;
+using LogFontA = FontLogicA;
+using LogFontW = FontLogicW;
+using CLogFont = CFontLogic;
+using CLogFontA = CFontLogicA;
+using CLogFontW = CFontLogicW;
+class BaseOf_GDI(Font, HFONT) {
+public:
+	using Super = GObjectBase<Font, HFONT>;
+	using Logic = FontLogic;
+	using LogicA = FontLogicA;
+	using LogicW = FontLogicW;
+protected:
+	proxy_basetype(Font);
+	Font(HFONT h) : Super(h) {}
+	Font(const Font &f) : Super(f) {}
+public:
+	Font() {}
+	Font(Nu) {}
+	Font(Font &f) : Super(f) {}
+	Font(Font &&f) : Super(f) {}
+public:
+	Font(const LogicA &LogFont) : Font(Create(LogFont)) {}
+	Font(const LogicW &LogFont) : Font(Create(LogFont)) {}
+public:
+	static inline Font Create(const LogicA &LogFont) ret_as(WandX::CreateFontIndirect(&LogFont));
+	static inline Font Create(const LogicW &LogFont) ret_as(WandX::CreateFontIndirect(&LogFont));
+public:
+	using Super::operator=;
+};
+using CFont = ProxyView<Font>;
+#pragma endregion
+
+#pragma region Pen
+enum_flags(PenStyles    , int            ,
+		   Solid        = PS_SOLID       ,
+		   Dash         = PS_DASH        ,
+		   Dot          = PS_DOT         ,
+		   DashDot      = PS_DASHDOT     ,
+		   DashDotDot   = PS_DASHDOTDOT  ,
+		   Null         = PS_NULL        ,
+		   InsideFrame  = PS_INSIDEFRAME ,
+		   UserStyle    = PS_USERSTYLE   ,
+		   Alternate    = PS_ALTERNATE   );
+class PenLogic : public StructShim<LOGPEN> {
+public:
+	using Super = StructShim<LOGPEN>;
+public:
+	PenLogic() {}
+public: // Property - Style
+	proxy_prop_set(Style,lopnStyle,PenStyles);
+	/* R */ inline PenStyles Style() const ret_as(reuse_cast<PenStyles>(self->lopnStyle));
+public: // Property - Width
+proxy_prop_set(Width, POINT, lopnWidth);
+	/* R */ inline Point Width() const ret_as(reuse_cast<POINT>(self->lopnWidth));
+public: // Property - Style
+proxy_prop_set(Color, COLORREF, lopnColor);
+	/* R */ inline COLORREF Color() const ret_as(reuse_cast<RGBColor>(self->lopnColor));
+};
+class BaseOf_GDI(Pen, HPEN) {
+public:
+	using Super = GObjectBase<Pen, HPEN>;
+	using Styles = PenStyles;
+	using Log = PenLogic;
+protected:
+	proxy_basetype(Pen);
+	Pen(HPEN h) : Super(h) {}
+	Pen(const Pen &p) : Super(p) {}
+public:
+	Pen() {}
+	Pen(Nu) {}
+	Pen(Pen &p) : Super(p) {}
+	Pen(Pen &&p) : Super(p) {}
+	Pen(const PenLogic &log) : Super(Create(log)) {}
+public:
+	static inline Pen Create(const PenLogic &log) ret_as(WandX::CreatePenIndirect(&log));
+	static inline Pen Create(Styles styles, COLORREF rgb, int nWidth = 0) ret_as(WandX::CreatePen(styles.yield(), nWidth, rgb));
+	static inline Pen CreateSolid(COLORREF rgb, int nWidth = 0)       ret_as(WandX::CreatePen(PS_SOLID, nWidth, rgb));
+	static inline Pen CreateDash(COLORREF rgb, int nWidth = 0)        ret_as(WandX::CreatePen(PS_DASH, nWidth, rgb));
+	static inline Pen CreateDot(COLORREF rgb, int nWidth = 0)         ret_as(WandX::CreatePen(PS_DOT, nWidth, rgb));
+	static inline Pen CreateDashDot(COLORREF rgb, int nWidth = 0)     ret_as(WandX::CreatePen(PS_DASHDOT, nWidth, rgb));
+	static inline Pen CreateDashDotDot(COLORREF rgb, int nWidth = 0)  ret_as(WandX::CreatePen(PS_DASHDOTDOT, nWidth, rgb));
+	static inline Pen CreateNull(COLORREF rgb, int nWidth = 0)        ret_as(WandX::CreatePen(PS_NULL, nWidth, rgb));
+	static inline Pen CreateInsideFrame(COLORREF rgb, int nWidth = 0) ret_as(WandX::CreatePen(PS_INSIDEFRAME, nWidth, rgb));
+	static inline Pen CreateUserStyle(COLORREF rgb, int nWidth = 0)   ret_as(WandX::CreatePen(PS_USERSTYLE, nWidth, rgb));
+	static inline Pen CreateAlternate(COLORREF rgb, int nWidth = 0)   ret_as(WandX::CreatePen(PS_ALTERNATE, nWidth, rgb));
+public:
+	static inline Pen White() ret_as((HPEN)WandX::GetStockObject(WHITE_PEN));
+	static inline Pen Black() ret_as((HPEN)WandX::GetStockObject(BLACK_PEN));
+	static inline Pen Nu()  ret_as((HPEN)WandX::GetStockObject(NULL_PEN));
+	static inline Pen DC()    ret_as((HPEN)WandX::GetStockObject(DC_PEN));
+public: // Property - Log
+	/* R */
+public:
+	using Super::operator=;
+};
+using CPen = ProxyView<Pen>;
+#pragma endregion
+
+#pragma region Brush
+enum_class(SysColor                 , IntP                          ,
+		   ScrollBar                = COLOR_SCROLLBAR               ,
+		   Background               = COLOR_BACKGROUND              ,
+		   ActiveCaption            = COLOR_ACTIVECAPTION           ,
+		   InactiveCaption          = COLOR_INACTIVECAPTION         ,
+		   Menu                     = COLOR_MENU                    ,
+		   Window                   = COLOR_WINDOW                  ,
+		   WindowFrame              = COLOR_WINDOWFRAME             ,
+		   MenuText                 = COLOR_MENUTEXT                ,
+		   WindowText               = COLOR_WINDOWTEXT              ,
+		   CaptionText              = COLOR_CAPTIONTEXT             ,
+		   ActiveBorder             = COLOR_ACTIVEBORDER            ,
+		   InactiveBorder           = COLOR_INACTIVEBORDER          ,
+		   AppWorkspace             = COLOR_APPWORKSPACE            ,
+		   HighLight                = COLOR_HIGHLIGHT               ,
+		   HighLightText            = COLOR_HIGHLIGHTTEXT           ,
+		   BtnFace                  = COLOR_BTNFACE                 ,
+		   BtnShadow                = COLOR_BTNSHADOW               ,
+		   GrayText                 = COLOR_GRAYTEXT                ,
+		   BtnText                  = COLOR_BTNTEXT                 ,
+		   InactiveCaptionText      = COLOR_INACTIVECAPTIONTEXT     ,
+		   BtnHighlight             = COLOR_BTNHIGHLIGHT            ,
+		   DkShadow3D               = COLOR_3DDKSHADOW              ,
+		   Light3D                  = COLOR_3DLIGHT                 ,
+		   InfoText                 = COLOR_INFOTEXT                ,
+		   InfoBk                   = COLOR_INFOBK                  ,
+		   HotLight                 = COLOR_HOTLIGHT                ,
+		   GradientActiveCaption    = COLOR_GRADIENTACTIVECAPTION   ,
+		   GradientInactiveCaption  = COLOR_GRADIENTINACTIVECAPTION ,
+		   MenuHiLight              = COLOR_MENUHILIGHT             ,
+		   MenuBar                  = COLOR_MENUBAR                 );
+enum_class(HatchStyles , int           ,
+		   Horizontal  = HS_HORIZONTAL ,   /* ----- */
+		   Vertical    = HS_VERTICAL   ,   /* ||||| */
+		   FDiagonal   = HS_FDIAGONAL  ,   /* \\\\\ */
+		   BDiagonal   = HS_BDIAGONAL  ,   /* ///// */
+		   Cross       = HS_CROSS      ,   /* +++++ */
+		   DiagCross   = HS_DIAGCROSS  );  /* xxxxx */
+class BaseOf_GDI(Brush, HBRUSH) {
+public:
+	using Super = GObjectBase<Brush, HBRUSH>;
+protected:
+	proxy_basetype(Brush);
+	Brush(HBRUSH h) : Super(h) {}
+	Brush(const Brush &b) : Super(b) {}
+public:
+	Brush() {}
+	Brush(Nu) {}
+	Brush(Brush &b) : Super(b) {}
+	Brush(Brush &&b) : Super(b) {}
+	Brush(WandX::SysColor sc) : Super(SysColor(sc)) {}
+	Brush(COLORREF rgb) : Super(CreateSolid(rgb)) {}
+	Brush(HBITMAP hbm) : Super(CreatePattern(hbm)) {}
+	Brush(HatchStyles hs, COLORREF rgb) : Super(CreateHatch(rgb, hs)) {}
+public:
+	static inline Brush CreateSolid(COLORREF rgb)                ret_as(WandX::CreateSolidBrush(rgb));
+	static inline Brush CreatePattern(HBITMAP hbm)               ret_as(WandX::CreatePatternBrush(hbm));
+	static inline Brush CreateHatch(COLORREF rgb, HatchStyles hs) ret_as(WandX::CreateHatchBrush(hs.yield(), rgb));
+public:
+	static inline Brush White()   ret_as((HBRUSH)WandX::GetStockObject(WHITE_BRUSH));
+	static inline Brush LitGray() ret_as((HBRUSH)WandX::GetStockObject(LTGRAY_BRUSH));
+	static inline Brush Gray()    ret_as((HBRUSH)WandX::GetStockObject(GRAY_BRUSH));
+	static inline Brush DkGray()  ret_as((HBRUSH)WandX::GetStockObject(DKGRAY_BRUSH));
+	static inline Brush Black()   ret_as((HBRUSH)WandX::GetStockObject(BLACK_BRUSH));
+	static inline Brush Nu()    ret_as((HBRUSH)WandX::GetStockObject(NULL_BRUSH));
+	static inline Brush DC()      ret_as((HBRUSH)WandX::GetStockObject(DC_BRUSH));
+public:
+	static inline Brush SysColor(WandX::SysColor sc) ret_as(WandX::GetSysColorBrush((int)sc.yield()));
+public:
+	using Super::operator=;
+};
+using CBrush = ProxyView<Brush>;
+#pragma endregion
+
+#pragma region Palette
+class PaletteEntry : public StructShim<PALETTEENTRY> {
+public:
+	using Super = StructShim<PALETTEENTRY>;
+public:
+	PaletteEntry() {}
+	PaletteEntry(const PALETTEENTRY &entry) : Super(entry) {}
+	PaletteEntry(BYTE r, BYTE g, BYTE b, BYTE f = 0) : Super(PALETTEENTRY{ r, g, b, f }) {}
+	PaletteEntry(RGBColor rgb, BYTE f = 0) : PaletteEntry(rgb.Red(), rgb.Green(), rgb.Blue(), f) {}
+	PaletteEntry(COLORREF rgb, BYTE f = 0) : PaletteEntry((RGBColor)rgb, f) {}
+	proxy_prop_sync(Red,peRed,BYTE);
+	proxy_prop_sync(Green,peGreen,BYTE);
+	proxy_prop_sync(Blue,peBlue,BYTE);
+public:
+	inline operator RGBColor() const ret_as({ Red(), Green(), Blue() });
+};
+using PalEntry = PaletteEntry;
+class BaseOf_GDI(Palette, HPALETTE) { //////////////
+public:
+	using Super = GObjectBase<Palette, HPALETTE>;
+	using Entry = PaletteEntry;
+protected:
+	proxy_basetype(Palette);
+	Palette(HPALETTE h) : Super(h) {}
+	Palette(const Palette &p) : Super(p) {}
+public:
+	Palette() {}
+	Palette(Nu) {}
+	Palette(Palette &p) : Super(p) {}
+	Palette(Palette &&p) : Super(p) {}
+public:
+	Palette(const Entry *lpEntries, UINT nCount) {
+		nt_assert(1 < nCount && nCount <= 256);
+		HeapPointer<LOGPALETTE> hPal;
+		hPal.Alloc(sizeof(LOGPALETTE) + (nCount - 1) * sizeof(Entry));
+		auto pPal = &hPal;
+		pPal->palVersion = 0x300;
+		pPal->palNumEntries = (WORD)nCount;
+		CopyMemory(&pPal->palPalEntry, lpEntries, sizeof(Entry) * nCount);
+		this->hobj = WandX::CreatePalette(pPal);
+	}
+	Palette(std::initializer_list<COLORREF> entries) : Palette((const Entry *)entries.begin(), (UINT)entries.size()) {}
+	Palette(std::initializer_list<Entry> entries) : Palette(entries.begin(), (UINT)entries.size()) {}
+	Palette(const std::vector<Entry> &entries) : Palette(entries.data(), (UINT)entries.size()) {}
+public:
+//	static inline Palette Create() ret_as();
+	static inline Palette Default() ret_as((HPALETTE)WandX::GetStockObject(DEFAULT_PALETTE));
+public:
+	inline auto &SetEntries(UINT iStart, const Entry *pPalEntries, UINT cEntries = 1) ret_to_self(WandX::SetPaletteEntries(self, iStart, cEntries, (const PALETTEENTRY *)pPalEntries));
+	inline auto &GetEntries(UINT iStart, Entry *pPalEntries, UINT cEntries = 1) const ret_to_self(WandX::GetPaletteEntries(self, iStart, cEntries, (LPPALETTEENTRY)pPalEntries));
+	inline UINT NearestIndex(COLORREF cr) const ret_as(WandX::GetNearestPaletteIndex(self, cr));
+#pragma region Properties
+public: // Property - Entries
+	/* W */ inline auto &Entries(std::vector<Entry> entries) {
+		auto count = std::min((SizeT)Count(), entries.size());
+		nt_assert(count <= 256);
+		if (count > 0)
+			SetEntries(0, entries.data(), (WORD)(count - 1));
+		retself;
+	}
+	/* R */ inline std::vector<Entry> Entries() const {
+		SizeT count = Count();
+		std::vector<Entry> entries(count);
+		if (count > 0)
+			GetEntries(0, entries.data(), (WORD)count);
+		return entries;
+	}
+public: // Property - NumEntries
+	/* W */ inline auto &Count(WORD nNumEntries) ret_to_self(WandX::ResizePalette(self, nNumEntries));
+	/* R */ inline WORD  Count() const ret_to(WORD w = 0, WandX::GetObject(self, sizeof(WORD), &w), w);
+public: // Property - Size
+	/* R */ inline SizeT Size() const ret_as(Count() * sizeof(Entry));
+#pragma endregion
+public:
+	using Super::operator=;
+	inline Entry operator[](SizeT ind) const ret_to(Entry entry; GetEntries((UINT)ind, (Entry *)&entry), entry);
+};
+using CPalette = ProxyView<Palette>;
+#pragma endregion
+
+#pragma region Region
+enum_class(PolyFillModes , int         ,
+		   Default       = 0           ,
+		   Alternate     = ALTERNATE   ,
+		   Winding       = WINDING     );
+enum_class(BkModes       , int         ,
+		   Default       = 0           ,
+		   Transparent   = TRANSPARENT ,
+		   Opaque        = OPAQUE      );
+class BaseOf_GDI(Region, HRGN) {
+public:
+	using Super = GObjectBase<Region, HRGN>;
+protected:
+	proxy_basetype(Region);
+	Region(HRGN h) : Super(h) {}
+	Region(const Region &r) : Super(r) {}
+public:
+	Region() {}
+	Region(Nu) {}
+	Region(Region &r) : Super(r) {}
+	Region(Region &&r) : Super(r) {}
+public:
+//	static inline void Combine() { CombineRgn() }
+public:
+	static inline Region CreateRect(WandX::Rect rc) ret_as(WandX::CreateRectRgn(rc.left, rc.top, rc.right, rc.bottom));
+	static inline Region CreateElliptic(WandX::Rect rc) ret_as(WandX::CreateEllipticRgn(rc.left, rc.top, rc.right, rc.bottom));
+	static inline Region CreateRound(WandX::Rect rc, WandX::Size sz) ret_as(WandX::CreateRoundRectRgn(rc.left, rc.top, rc.right, rc.bottom, sz.cx, sz.cy));
+	static inline Region CreatePolygon(const POINT *ppt1, int cPoint, PolyFillModes mode = PolyFillModes::Winding) ret_as(WandX::CreatePolygonRgn(ppt1, cPoint, mode.yield()));
+	static inline Region CreatePolyPolygon(const POINT *ppt1, int cPoint, PolyFillModes mode = PolyFillModes::Winding) ret_as(WandX::CreatePolygonRgn(ppt1, cPoint, mode.yield()));
+public:
+	inline bool Equal(HRGN hRgn) ret_as(WandX::EqualRgn(self, hRgn));
+	inline bool Has(Point pt) ret_as(WandX::PtInRegion(self, pt.x, pt.y));
+	inline bool Has(WandX::Rect rc) ret_as(WandX::RectInRegion(self, &rc));
+public:
+	inline void And(HRGN hRgn) { WandX::CombineRgn(self, self, hRgn, RGN_AND); }
+	inline void And(HRGN hRgn1, HRGN hRgn2) { WandX::CombineRgn(self, hRgn1, hRgn2, RGN_AND); }
+	inline void Or(HRGN hRgn) { WandX::CombineRgn(self, self, hRgn, RGN_OR); }
+	inline void Or(HRGN hRgn1, HRGN hRgn2) { WandX::CombineRgn(self, hRgn1, hRgn2, RGN_OR); }
+	inline void Xor(HRGN hRgn) { WandX::CombineRgn(self, self, hRgn, RGN_XOR); }
+	inline void Xor(HRGN hRgn1, HRGN hRgn2) { WandX::CombineRgn(self, hRgn1, hRgn2, RGN_XOR); }
+	inline void Diff(HRGN hRgn) { WandX::CombineRgn(self, self, hRgn, RGN_DIFF); }
+	inline void Diff(HRGN hRgn1, HRGN hRgn2) { WandX::CombineRgn(self, hRgn1, hRgn2, RGN_DIFF); }
+	inline void Offset(Point off) { WandX::OffsetRgn(self, off.x, off.y); }
+public:
+	inline auto &operator&(HRGN hRgn) ret_to_self(And(hRgn));
+	inline auto &operator|(HRGN hRgn) ret_to_self(Or(hRgn));
+	inline auto &operator^(HRGN hRgn) ret_to_self(Xor(hRgn));
+	inline auto &operator-(HRGN hRgn) ret_to_self(Diff(hRgn));
+};
+using CRegion = ProxyView<Region>;
+#pragma endregion
+
+#pragma region MetaFile
+class BaseOf_GDI(MetaFile, HMETAFILE) {
+public:
+	using Super = GObjectBase<MetaFile, HMETAFILE>;
+protected:
+	proxy_basetype(Region);
+	MetaFile(HMETAFILE h) : Super(h) {}
+	MetaFile(const MetaFile &m) : Super(m) {}
+public:
+	MetaFile() {}
+	MetaFile(Nu) {}
+	MetaFile(MetaFile &m) : Super(m) {}
+	MetaFile(MetaFile &&m) : Super(m) {}
+	~MetaFile() ret_to(Delete());
+public:
+
+public:
+	inline void Delete() {
+		if (self)
+			WandX::DeleteMetaFile(self);
+		this->hobj = O;
+	}
+};
+using CMetaFile = ProxyView<MetaFile>;
+#pragma endregion
+
+#pragma region DevCap
+
+#pragma region ColorSpace
+enum_class(MapModes       , int            ,
+		   Text           = MM_TEXT        ,
+		   LoMetric       = MM_LOMETRIC    ,
+		   HiMetric       = MM_HIMETRIC    ,
+		   LoEnglish      = MM_LOENGLISH   ,
+		   HiEnglish      = MM_HIENGLISH   ,
+		   Twips          = MM_TWIPS       ,
+		   Isotropic      = MM_ISOTROPIC   ,
+		   Anisotropic    = MM_ANISOTROPIC );
+enum_flags(Rop            , DWORD          ,
+		   SrcCopy        = SRCCOPY        ,  /* dest = source                   */
+		   SrcPaint       = SRCPAINT       ,  /* dest = source OR dest           */
+		   SrcAnd         = SRCAND         ,  /* dest = source AND dest          */
+		   SrcInvert      = SRCINVERT      ,  /* dest = source XOR dest          */
+		   SrcErase       = SRCERASE       ,  /* dest = source AND (NOT dest )   */
+		   SrcCopyNot     = NOTSRCCOPY     ,  /* dest = (NOT source)             */
+		   SrcEraseNot    = NOTSRCERASE    ,  /* dest = (NOT src) AND (NOT dest) */
+		   MergeCopy      = MERGECOPY      ,  /* dest = (source AND pattern)     */
+		   MergePaint     = MERGEPAINT     ,  /* dest = (NOT source) OR dest     */
+		   PatCopy        = PATCOPY        ,  /* dest = pattern                  */
+		   PatPaint       = PATPAINT       ,  /* dest = DPSnoo                   */
+		   PatInvert      = PATINVERT      ,  /* dest = pattern XOR dest         */
+		   DstInvert      = DSTINVERT      ,  /* dest = (NOT dest)               */
+		   Blackness      = BLACKNESS      ,  /* dest = BLACK                    */
+		   Whiteness      = WHITENESS      ,  /* dest = WHITE                    */
+		   NoMirrorBitmap = NOMIRRORBITMAP ,  /* Do not Mirror the bitmap in this call */
+		   CaptureBlt     = CAPTUREBLT     ); /* Include layered windows              */
+enum_flags(Rop2           , int            ,
+		   Black          = R2_BLACK       ,
+		   NotMergePen    = R2_NOTMERGEPEN ,
+		   MaskNotPen     = R2_MASKNOTPEN  ,
+		   NotCopyPen     = R2_NOTCOPYPEN  ,
+		   MaskPenNot     = R2_MASKPENNOT  ,
+		   Not            = R2_NOT         ,
+		   XorPen         = R2_XORPEN      ,
+		   NotMaskPen     = R2_NOTMASKPEN  ,
+		   MaskPen        = R2_MASKPEN     ,
+		   NotXorPen      = R2_NOTXORPEN   ,
+		   Nop            = R2_NOP         ,
+		   MergeNotPen    = R2_MERGENOTPEN ,
+		   CopyPen        = R2_COPYPEN     ,
+		   MergePenNot    = R2_MERGEPENNOT ,
+		   MergePen       = R2_MERGEPEN    ,
+		   White          = R2_WHITE       );
+enum_class(StretcheModes  , int            ,
+		   And            = BLACKONWHITE   ,
+		   Or             = WHITEONBLACK   ,
+		   Del            = COLORONCOLOR   ,
+		   Half           = HALFTONE       );
+enum_flags(TextAlign      , UINT           , 
+		   NoUpDateCP     = TA_NOUPDATECP  ,
+		   UpDateCP       = TA_UPDATECP    ,
+		   Left           = TA_LEFT        ,
+		   Right          = TA_RIGHT       ,
+		   Center         = TA_CENTER      ,
+		   Top            = TA_TOP         ,
+		   Bottom         = TA_BOTTOM      ,
+		   Baseline       = TA_BASELINE    ,
+		   RTLReading     = TA_RTLREADING  );
+enum_flags(Illuminants    , WORD                      ,
+		   Default        = ILLUMINANT_DEVICE_DEFAULT ,
+		   A              = ILLUMINANT_A              ,
+		   B              = ILLUMINANT_B              ,
+		   C              = ILLUMINANT_C              ,
+		   D50            = ILLUMINANT_D50            ,
+		   D55            = ILLUMINANT_D55            ,
+		   D65            = ILLUMINANT_D65            ,
+		   D75            = ILLUMINANT_D75            ,
+		   F2             = ILLUMINANT_F2             ,
+		   Tungsten       = ILLUMINANT_TUNGSTEN       ,
+		   DayLight       = ILLUMINANT_DAYLIGHT       ,
+		   Fluorescent    = ILLUMINANT_FLUORESCENT    ,
+		   NTSC           = ILLUMINANT_NTSC           );
+proxy_struct       (ColorAdjustment , COLORADJUSTMENT                  ) {
+	ColorAdjustment() ret_to(self->caSize = sizeof(COLORADJUSTMENT));
+	proxy_prop_sync(Illuminant      , caIlluminantIndex  , Illuminants );
+	proxy_prop_sync(RedGamma        , caRedGamma         , WORD        );
+	proxy_prop_sync(GreenGamma      , caGreenGamma       , WORD        );
+	proxy_prop_sync(BlueGamma       , caBlueGamma        , WORD        );
+	proxy_prop_sync(ReferenceBlack  , caReferenceBlack   , WORD        );
+	proxy_prop_sync(ReferenceWhite  , caReferenceWhite   , WORD        );
+	proxy_prop_sync(Contrast        , caContrast         , SHORT       );
+	proxy_prop_sync(Brightness      , caBrightness       , SHORT       );
+	proxy_prop_sync(Colorfulness    , caColorfulness     , SHORT       );
+	proxy_prop_sync(RedGreenTint    , caRedGreenTint     , SHORT       );};
+class RGBIndex : public StructShim<CIEXYZ> {
+public:
+	using Super = StructShim<CIEXYZ>;
+public:
+	RGBIndex() {}
+	RGBIndex(const CIEXYZ &xyz) : Super(xyz) {}
+	RGBIndex(FXPT2DOT30 ciexyzX, FXPT2DOT30 ciexyzY, FXPT2DOT30 ciexyzZ) : 
+		Super(CIEXYZ{ ciexyzX, ciexyzY, ciexyzZ }) {}
+	proxy_prop(X,ciexyzX,FXPT2DOT30,auto);
+	proxy_prop(Y,ciexyzY,FXPT2DOT30,auto);
+	proxy_prop(Z,ciexyzZ,FXPT2DOT30,auto);
+};
+class RGBTriple : public StructShim<CIEXYZTRIPLE> {
+public:
+	using Super = StructShim<CIEXYZTRIPLE>;
+public:
+	RGBTriple() {}
+	RGBTriple(const CIEXYZTRIPLE &xyzTriple) : Super(xyzTriple) {}
+	RGBTriple(CIEXYZ ciexyzR, CIEXYZ ciexyzG, CIEXYZ ciexyzB) : Super(CIEXYZTRIPLE{ ciexyzR, ciexyzG, ciexyzB }) {}
+public: // Property - Red
+	/* W */ inline auto&Red(RGBIndex ciexyzRed) ret_to_self(self->ciexyzRed = *ciexyzRed);
+	proxy_prop_get(Red,ciexyzRed,RGBIndex);
+public: // Property - Green
+	/* W */ inline auto&Green(RGBIndex ciexyzGreen) ret_to_self(self->ciexyzGreen = *ciexyzGreen);
+	proxy_prop_get(Green,ciexyzGreen,RGBIndex);
+public: // Property - Blue
+	/* W */ inline auto&Blue(RGBIndex ciexyzBlue) ret_to_self(self->ciexyzBlue = *ciexyzBlue);
+	proxy_prop_get(Blue,ciexyzBlue,RGBIndex);
+};
+enum_flags(ColorType, LCSCSTYPE,
+	CalibratedRGB     = LCS_CALIBRATED_RGB,
+	sRGB              = LCS_sRGB,
+	Default           = LCS_WINDOWS_COLOR_SPACE);
+enum_flags(ColorIntents, DWORD,
+	Perceptual        = LCS_GM_BUSINESS,
+	Relative          = LCS_GM_GRAPHICS,
+	Saturation        = LCS_GM_IMAGES,
+	Absolute          = LCS_GM_ABS_COLORIMETRIC);
+template<bool IsUnicode>
+class ColorSpaceX : public StructShim<std::conditional_t<IsUnicode, LOGCOLORSPACEW, LOGCOLORSPACEA>> {
+public:
+	using LOGCOLORSPACE = std::conditional_t<IsUnicode, LOGCOLORSPACEW, LOGCOLORSPACEA>;
+	using Super = StructShim<LOGCOLORSPACE>;
+	using String = StringX<IsUnicode>;
+public:
+	ColorSpaceX() ret_to(self->lcsSize = sizeof(LOGCOLORSPACE);
+							 self->lcsSignature = LCS_SIGNATURE;
+							 self->lcsVersion = 0x400);
+	ColorSpaceX(const LOGCOLORSPACE &cs) : Super(cs) {}
+proxy_prop_sync(Type,lcsCSType,ColorType);
+proxy_prop_sync(Intent,lcsIntent,ColorIntents);
+public: // Property - Endpoints
+	/* W */ inline auto&Endpoints(RGBTriple lcsEndpoints) ret_to_self(self->lcsEndpoints = *lcsEndpoints);
+	proxy_prop_get(Endpoints,lcsEndpoints,RGBTriple);
+public: // Property - GammaRed
+	/* W */ inline auto&GammaRed(RGBIndex lcsGammaRed) ret_to_self(self->lcsGammaRed = *lcsGammaRed);
+	proxy_prop_get(GammaRed,lcsGammaRed,RGBIndex);
+public: // Property - GammaGreen
+	/* W */ inline auto&GammaGreen(RGBIndex lcsGammaGreen) ret_to_self(self->lcsGammaGreen = *lcsGammaGreen);
+	proxy_prop_get(GammaGreen,lcsGammaGreen,RGBIndex);
+public: // Property - GammaBlue
+	/* W */ inline auto &GammaBlue(RGBIndex lcsGammaBlue) ret_to_self(self->lcsGammaBlue = *lcsGammaBlue);
+	proxy_prop_get(GammaBlue,lcsGammaBlue,RGBIndex);
+public: // Property - Filename
+	/* W */ inline auto &Filename(const String &strFilename) ret_to_self(strFilename.CopyTo(self->lcsFilename, MAX_PATH));
+	/* R */ inline const String Filename() const ret_to(CString(MAX_PATH, self->lcsFilename));
+};
+using ColorSpace = ColorSpaceX<IsUnicode>;
+using ColorSpaceA = ColorSpaceX<false>;
+using ColorSpaceW = ColorSpaceX<true>;
+#pragma endregion
+
+class XForm : public StructShim<XFORM> {
+public:
+	using Super = StructShim<XFORM>;
+public:
+	XForm() {}
+	XForm(const XFORM &xf) : Super(xf) {}
+	XForm(FLOAT eM11, FLOAT eM12, FLOAT eM21, FLOAT eM22, FLOAT eDx = 0, FLOAT eDy = 0) :
+		Super(XFORM{ eM11, eM12, eM21, eM22, eDx, eDy }) {}
+	proxy_prop(M11,eM11,FLOAT,auto);
+	proxy_prop(M12,eM12,FLOAT,auto);
+	proxy_prop(M21,eM21,FLOAT,auto);
+	proxy_prop(M22,eM22,FLOAT,auto);
+	proxy_prop(Dx,eDx,FLOAT,auto);
+	proxy_prop(Dy,eDy,FLOAT,auto);
+//public: // Property - Offset
+//	/* W */ inline auto&Offset(Point off) ret_to_self(self->eDx = off.x, self->eDy = off.y);
+//	/* R */ inline auto Offset() const ret_as(Point{ self->eDx, self->eDy });
+public:
+	class IFloat {
+		friend class XForm;
+		FLOAT &f;
+	private:
+		IFloat(const IFloat &) = delete;
+		IFloat(FLOAT &f) : f(f) {}
+	public:
+		IFloat(IFloat &&) = default;
+	public:
+		inline operator FLOAT&() const ret_as(f);
+		inline operator FLOAT() const ret_as(f);
+	};
+	inline IFloat operator[](Point pt) {
+		if (pt.x == 0 && pt.y == 0) return self->eM11;
+		if (pt.x == 1 && pt.y == 0) return self->eM12;
+		if (pt.x == 0 && pt.y == 1) return self->eM21;
+		if (pt.x == 1 && pt.y == 1) return self->eM22;
+		nt_assert(false);
+	}
+	inline FLOAT operator[](Point pt) const {
+		if (pt.x == 0 && pt.y == 0) return self->eM11;
+		if (pt.x == 1 && pt.y == 0) return self->eM12;
+		if (pt.x == 0 && pt.y == 1) return self->eM21;
+		if (pt.x == 1 && pt.y == 1) return self->eM22;
+		nt_assert(false);
+	}
+};
+
+#if(WINVER >= 0x0400)
+#define DRAWTEXT_1 \
+	, EditControl          = DT_EDITCONTROL   \
+	, PathEllipsis         = DT_PATH_ELLIPSIS \
+	, EndEllipsis          = DT_END_ELLIPSIS  \
+	, ModifyString         = DT_MODIFYSTRING  \
+	, RTLReading           = DT_RTLREADING    \
+	, WordEllipsis         = DT_WORD_ELLIPSIS
+#if(WINVER >= 0x0500)
+#define DRAWTEXT_2 \
+	, NoFullWidthCharBreak = DT_NOFULLWIDTHCHARBREAK
+#if(_WIN32_WINNT >= 0x0500)
+#define DRAWTEXT_3 \
+	, HidePrefix           = DT_HIDEPREFIX \
+	, PrefixOnly           = DT_PREFIXONLY
+#endif
+#endif
+#endif
+
+enum_flags(TextDraw, UINT,
+	  Top               = DT_TOP
+	, Left              = DT_LEFT
+	, Center            = DT_CENTER
+	, Right             = DT_RIGHT
+	, VCenter           = DT_VCENTER
+	, Bottom            = DT_BOTTOM
+	, WordBreak         = DT_WORDBREAK
+	, SingleLine        = DT_SINGLELINE
+	, ExpandTabs        = DT_EXPANDTABS
+	, TabStop           = DT_TABSTOP
+	, NoClip            = DT_NOCLIP
+	, ExternalLeading   = DT_EXTERNALLEADING
+	, CalcRect          = DT_CALCRECT
+	, NoPrefix          = DT_NOPREFIX
+	, Internal          = DT_INTERNAL
+	DRAWTEXT_1
+	DRAWTEXT_2
+	DRAWTEXT_3);
+
+class BaseOf_GDI(DevCap, HDC) {
+public:
+	using Super = GObjectBase<DevCap, HDC>;
+protected:
+	proxy_basetype(DevCap);
+	DevCap(HDC h) : Super(h) {}
+	DevCap(const DevCap &d) : Super(d) {}
+public:
+	DevCap() {}
+	DevCap(Nu) {}
+	DevCap(DevCap &d) : Super(d) {}
+	DevCap(DevCap &&d) : Super(d) {}
+	~DevCap() ret_to(Delete());
+public:
+	static inline DevCap CreateCompatible(HDC hdc = O) ret_as(WandX::CreateCompatibleDC(hdc));
+public:
+	//inline void Delete() {
+	//	if (self)
+	//		nt_assert(DeleteDC(self));
+	//	this->hobj = O;
+	//}
+	inline auto Release(HWND hWnd) ret_as(WandX::ReleaseDC(hWnd, self));
+
+	inline CGObject Select(HGDIOBJ ho) ret_as(::SelectObject(self, ho));
+	inline CPalette Palette(HPALETTE hPal, bool bForceBkgd = false) ret_to(hPal = WandX::SelectPalette(self, hPal, bForceBkgd), hPal);
+	inline UINT PaletteRealize() const ret_as(WandX::RealizePalette(self));
+
+//	inline auto &BltStretch(Point dstStart, WandX::Size dstSize, Rop rop = Rop::SrcCopy)
+	inline auto &BltStretch(Point dstStart, WandX::Size dstSize, HDC hdcSrc, Point srcStart, WandX::Size srcSize, Rop rop = Rop::SrcCopy) ret_to_self(WandX::StretchBlt(self, dstStart.x, dstStart.y, dstSize.cx, dstSize.cy, hdcSrc, srcStart.x, srcStart.y, srcSize.cx, srcSize.cy, rop.yield()));
+	inline auto &BltStretch(WandX::Rect dst, HDC hdcSrc, WandX::Rect src, Rop rop = Rop::SrcCopy) ret_to_self(BltStretch(dst.left_top(), dst.size(), hdcSrc, src.left_top(), src.size(), rop));
+	inline auto &BltBit(Point dstStart, WandX::Size dstSize, HDC hdcSrc, Point srcStart = 0, Rop rop = Rop::SrcCopy) ret_to_self(WandX::BitBlt(self, dstStart.x, dstStart.y, dstSize.cx, dstSize.cy, hdcSrc, srcStart.x, srcStart.y, rop.yield()));
+	inline auto &BltBit(WandX::Rect rc, HDC hdcSrc, Point srcStart = 0, Rop rop = Rop::SrcCopy) ret_to_self(BltBit(rc.left_top(), rc.size(), hdcSrc, srcStart, rop));
+
+	template<SizeT len>
+	inline auto &DrawPolyline(const POINT(&pts)[len]) ret_to_self(WandX::Polyline(self, &pts, len));
+	template<SizeT len>
+	inline auto &DrawPolyline(const Point(&pts)[len]) ret_to_self(WandX::Polyline(self, (CONST POINT *)&pts, len));
+	inline auto &DrawPolyline(const Point *pts, int len) ret_to_self(WandX::Polyline(self, (CONST POINT *)pts, len));
+	inline auto &DrawPolyline(const POINT *pts, int len) ret_to_self(WandX::Polyline(self, pts, len));
+	inline auto &DrawIcon(HICON hIcon, Point p = 0) ret_to_self(WandX::DrawIcon(self, p.x, p.y, hIcon));
+	inline int  DrawText(String text, WandX::Rect r = 0, TextDraw format = TextDraw::Left) ret_as(WandX::DrawText(self, text, (int)text.Length(), r, format.yield()));
+	inline auto &DrawPixel(COLORREF rgb, Point p) ret_to_self(WandX::SetPixel(self, p.x, p.y, rgb));
+	inline auto &DrawPie(WandX::Rect rc, Point start, Point end) ret_to_self(WandX::Pie(self, rc.left, rc.top, rc.right, rc.bottom, start.x, start.y, end.x, end.y));
+	inline auto &DrawEllipse(WandX::Rect rc) ret_to_self(Ellipse(self, rc.left, rc.top, rc.right, rc.bottom));
+	inline auto &DrawFrame(WandX::Rect rc) ret_to_self(WandX::InvertRect(self, rc));
+	inline auto &DrawFocus(HBRUSH hbr, WandX::Rect rc) ret_to_self(WandX::FrameRect(self, &rc, hbr));
+	inline auto &Invert(WandX::Rect rc) ret_to_self(WandX::InvertRect(self, rc));
+	inline auto &Fill(HBRUSH hbr, WandX::Rect rc) ret_to_self(WandX::FillRect(self, rc, hbr));
+	inline auto &Fill(HBRUSH hbr) ret_as(Fill(hbr, Size()));
+public:
+	class IPixel {
+		friend class DevCap;
+		HDC hdc;
+		POINT pt;
+	private:
+		IPixel(const IPixel &) = delete;
+		IPixel(HDC hdc, POINT pt) : hdc(hdc), pt(pt) {}
+	public:
+		IPixel(IPixel &&) = default;
+	public:
+		inline operator RGBColor() const ret_as(WandX::GetPixel(hdc, pt.x, pt.y));
+		inline operator COLORREF() const ret_as(WandX::GetPixel(hdc, pt.x, pt.y));
+		inline void operator=(COLORREF clr) ret_to(WandX::SetPixel(hdc, pt.x, pt.y, clr));
+	};
+	inline IPixel Pixel(Point pt) ret_as({ self, pt });
+	inline const IPixel Pixel(Point pt) const ret_as({ self, pt });
+
+#pragma region Properties
+public: // Property - BkColor
+	/* W */ inline auto&BkColor(COLORREF rgb) ret_to_self(WandX::SetBkColor(self, rgb));
+	/* R */ inline auto BkColor() const ret_as((RGBColor)WandX::GetBkColor(self));
+public: // Property - PenColor
+	/* W */ inline auto&PenColor(COLORREF rgb) ret_to_self(WandX::SetDCPenColor(self, rgb));
+	/* R */ inline auto PenColor() const ret_as((RGBColor)WandX::GetDCPenColor(self));
+public: // Property - TextColor
+	/* W */ inline auto&TextColor(COLORREF color) ret_to_self(SetTextColor(self, color));
+	/* R */ inline auto TextColor() const ret_as((RGBColor)WandX::GetTextColor(self));
+public: // Property - BrushColor
+	/* W */ inline auto&BrushColor(COLORREF rgb) ret_to_self(WandX::SetDCBrushColor(self, rgb));
+	/* R */ inline auto BrushColor() const ret_as((RGBColor)WandX::GetDCBrushColor(self));
+public: // Property - BrushOrg
+	/* W */ inline auto&BrushOrg(Point pt) ret_to_self(WandX::SetBrushOrgEx(self, pt.x, pt.y, O));
+	/* R */ inline auto BrushOrg() const ret_to(Point pt, WandX::GetBrushOrgEx(self, &pt), pt);
+public: // Property - BkMode
+public: // Property - ViewOrg
+	/* W */ inline auto&ViewOrg(Point pt) ret_to_self(WandX::SetViewportOrgEx(self, pt.x, pt.y, O));
+	/* R */ inline auto ViewOrg() const ret_to(Point pt, WandX::GetViewportOrgEx(self, &pt), pt);
+public: // Property - ViewExt
+	/* W */ inline auto&ViewExt(WandX::Size sz) ret_to_self(WandX::SetViewportExtEx(self, sz.cx, sz.cy, O));
+	/* R */ inline auto ViewExt() const ret_to(WandX::Size sz, WandX::GetViewportExtEx(self, &sz), sz);
+public: // Property - WindowOrg
+	/* W */ inline auto&WindowOrg(Point pt) ret_to_self(WandX::SetWindowOrgEx(self, pt.x, pt.y, O));
+	/* R */ inline auto WindowOrg() const ret_to(Point pt, WandX::GetWindowOrgEx(self, &pt), pt);
+public: // Property - WindowExt
+	/* W */ inline auto&WindowExt(WandX::Size sz) ret_to_self(WandX::SetWindowExtEx(self, sz.cx, sz.cy, O));
+	/* R */ inline auto WindowExt() const ret_to(WandX::Size sz, WandX::GetWindowExtEx(self, &sz), sz);
+public: // Property - Size
+	/* R */ inline WandX::Size Size() const ret_as({ WandX::GetDeviceCaps(self, HORZRES), WandX::GetDeviceCaps(self, VERTRES) });
+public: // Property - WorldTransform
+	/* W */ inline auto&WorldTransform(const XForm &xf) ret_to_self(WandX::SetWorldTransform(self, &xf));
+	/* R */ inline auto WorldTransform() const ret_to(XForm xf; WandX::GetWorldTransform(self, &xf), xf);
+public: // Property - MapMode
+	/* W */ inline auto&MapMode(MapModes mode) ret_to_self(WandX::SetMapMode(self, mode.yield()));
+	/* R */ inline auto MapMode() const ret_as(reuse_cast<MapModes>(WandX::GetMapMode(self)));
+public: // Property - TextAligns
+	/* W */ inline auto&TextAligns(TextAlign align) ret_to_self(WandX::SetTextAlign(self, align.yield()));
+	/* R */ inline auto TextAligns() const ret_as(reuse_cast<TextAlign>(WandX::GetTextAlign(self)));
+public: // Property - StretchMode
+	/* W */ inline auto&StretchMode(StretcheModes mode) ret_to_self(WandX::SetStretchBltMode(self, mode.yield()));
+	/* R */ inline auto StretchMode() const ret_as(reuse_cast<StretcheModes>(WandX::GetStretchBltMode(self)));
+public: // Property - PolyFillMode
+	/* W */ inline auto&PolyFillMode(PolyFillModes mode) ret_to_self(WandX::SetPolyFillMode(self, mode.yield()));
+	/* W */ inline auto PolyFillMode() const ret_as(reuse_cast<PolyFillModes>(WandX::GetPolyFillMode(self)));
+public: // Property - Rop2
+	/* W */ inline auto&Rop2(WandX::Rop2 rop2) ret_to_self(WandX::SetROP2(self, rop2.yield()));
+	/* R */ inline auto Rop2() const ret_as(reuse_cast<WandX::Rop2>(WandX::GetROP2(self)));
+public: // Property - MiterLimit
+	/* W */ inline auto&MiterLimit(FLOAT limit) ret_to_self(WandX::SetMiterLimit(self, limit, O));
+	/* R */ inline auto MiterLimit() const ret_to(FLOAT f = 0, WandX::GetMiterLimit(self, &f), f);
+public: // Property - ColorAdjustment
+	/* W */ inline auto&ColorAdjustment(const WandX::ColorAdjustment &ca) ret_to_self(WandX::SetColorAdjustment(self, &ca));
+	/* R */ inline auto ColorAdjustment() const ret_to(WandX::ColorAdjustment ca; WandX::GetColorAdjustment(self, &ca), ca);
+public: // Property - ICMProfile
+	/* W */ inline auto &ICMProfile(const StringA &str) ret_to_self(WandX::SetICMProfile(self, const_cast<LPSTR>(str.c_str())));
+	/* W */ inline auto &ICMProfile(const StringW &str) ret_to_self(WandX::SetICMProfile(self, const_cast<LPWSTR>(str.c_str())));
+	template<bool IsUnicode = Native::IsUnicode>
+	/* R */ inline StringX<IsUnicode> ICMProfile() const {
+		DWORD len = 0;
+		WandX::GetICMProfile(self, &len, (LPXSTR<IsUnicode>)O);
+		StringX<IsUnicode> str((SizeT)len);
+		WandX::GetICMProfile(self, O, str);
+		return right_cast(str);
+	}
+#pragma endregion
+public:
+	using Super::operator=;
+	inline auto&operator()(HGDIOBJ ho) ret_to_self(Select(ho));
+	inline auto&operator()(Bitmap &ho) ret_to_self(Select(ho));
+	inline auto&operator()(const Pen &ho) ret_to_self(Select(ho));
+	inline auto&operator()(const Brush &ho) ret_to_self(Select(ho));
+	inline auto&operator()(const WandX::Palette hPal, bool bForceBkgd = false) ret_to_self(Palette(hPal, bForceBkgd));
+};
+using CDevCap = ProxyView<DevCap>;
+using DC = DevCap;
+using CDC = ProxyView<DevCap>;
+#pragma endregion

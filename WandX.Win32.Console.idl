@@ -1,0 +1,298 @@
+enum_flags(ConsoleAttribute       , WORD                                                                       ,
+		/* Foreground------------------------------------------------------------------------------------------*/
+		   FgBlack                = 0                                                                          ,
+		   FgRed                  = FOREGROUND_RED                                                             ,
+		   FgGreen                =                  FOREGROUND_GREEN                                          ,
+		   FgBlue                 =                                     FOREGROUND_BLUE                        ,
+		   FgIntensity            =                                                       FOREGROUND_INTENSITY ,
+		/* Background------------------------------------------------------------------------------------------*/
+		   BgBlack                = 0                                                                           ,
+		   BgRed                  = BACKGROUND_RED                                                             ,
+		   BgGreen                =                  BACKGROUND_GREEN                                          ,
+		   BgBlue                 =                                     BACKGROUND_BLUE                        ,
+		   BgIntensity            =                                                       BACKGROUND_INTENSITY ,
+		/* Other Colors Forground------------------------------------------------------------------------------*/
+		   FgAqua                 =                  FOREGROUND_GREEN | FOREGROUND_BLUE                        ,
+		   FgPurple               = FOREGROUND_RED |                    FOREGROUND_BLUE                        ,
+		   FgYellow               = FOREGROUND_RED | FOREGROUND_GREEN                                          ,
+		   FgWhite                = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE                        ,
+		   FgLightBlue            =                                     FOREGROUND_BLUE | FOREGROUND_INTENSITY ,
+		   FgLightGreen           =                  FOREGROUND_GREEN |                   FOREGROUND_INTENSITY ,
+		   FgLightAqua            =                  FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY ,
+		   FgLightRed             = FOREGROUND_RED |                                      FOREGROUND_INTENSITY ,
+		   FgLightPurple          = FOREGROUND_RED |                    FOREGROUND_BLUE | FOREGROUND_INTENSITY ,
+		   FgLightYellow          = FOREGROUND_RED | FOREGROUND_GREEN |                   FOREGROUND_INTENSITY ,
+		   FgBrightWhite          = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY ,
+		/* Other Colors Background-----------------------------------------------------------------------------*/
+		   BgAqua                 =                  BACKGROUND_GREEN | BACKGROUND_BLUE                        ,
+		   BgPurple               = BACKGROUND_RED |                    BACKGROUND_BLUE                        ,
+		   BgYellow               = BACKGROUND_RED | BACKGROUND_GREEN                                          ,
+		   BgWhite                = BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE                        ,
+		   BgLightBlue            =                                     BACKGROUND_BLUE | BACKGROUND_INTENSITY ,
+		   BgLightGreen           =                  BACKGROUND_GREEN |                   BACKGROUND_INTENSITY ,
+		   BgLightAqua            =                  BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_INTENSITY ,
+		   BgLightRed             = BACKGROUND_RED |                                      BACKGROUND_INTENSITY ,
+		   BgLightPurple          = BACKGROUND_RED |                    BACKGROUND_BLUE | BACKGROUND_INTENSITY ,
+		   BgLightYellow          = BACKGROUND_RED | BACKGROUND_GREEN |                   BACKGROUND_INTENSITY ,
+		   BgBrightWhite          = BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_INTENSITY ,
+		/* Mask------------------------------------------------------------------------------------------------*/
+		   ForegroundMask         = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY ,
+		   BackgroundMask         = BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_INTENSITY);
+alias_of_type(ConsoleColor, ConsoleAttribute);
+enum_flags(ConsoleSelectionFlag, DWORD                        ,
+		   No                  = CONSOLE_NO_SELECTION         ,
+		   InProgress          = CONSOLE_SELECTION_IN_PROGRESS,
+		   NotEmpty            = CONSOLE_SELECTION_NOT_EMPTY  ,
+		   MouseSelection      = CONSOLE_MOUSE_SELECTION      ,
+		   MouseDown           = CONSOLE_MOUSE_DOWN           );
+proxy_struct       (ConsoleSelectionInfo     , CONSOLE_SELECTION_INFO                             ) {
+	proxy_prop_sync(Flags                    , dwFlags                     , ConsoleSelectionFlag );
+	proxy_prop_sync(Anchor                   , dwSelectionAnchor           , WandX::Point         );
+	proxy_prop_sync(Rect                     , srSelection                 , WandX::Rect          );};
+proxy_struct       (ConsoleHistoryInfo       , CONSOLE_HISTORY_INFO                               ) {
+	proxy_prop_size(                           cbSize                      , UINT                 );
+	proxy_prop_sync(BufferSize               , HistoryBufferSize           , UINT                 );
+	proxy_prop_sync(NumberOfBuffers          , HistoryBufferSize           , UINT                 );
+	proxy_prop_sync(NoDuplication            , dwFlags                     , bool                 );};
+proxy_struct       (ConsoleCursorInfo        , CONSOLE_CURSOR_INFO                                ) {
+	proxy_prop_sync(Size                     , dwSize                      , DWORD                );
+	proxy_prop_sync(Visible                  , bVisible                    , bool                 );};
+proxy_struct       (ConsoleScreenBufferInfo  , CONSOLE_SCREEN_BUFFER_INFO                         ) {
+	proxy_prop_sync(Size                     , dwSize                      , WandX::Size          );
+	proxy_prop_sync(CursorPosition           , dwCursorPosition            , WandX::Point         );
+	proxy_prop_sync(Attributes               , wAttributes                 , ConsoleAttribute     );
+	proxy_prop_sync(WindowRect               , srWindow                    , WandX::Rect          );
+	proxy_prop_sync(MaximumWindowSize        , dwMaximumWindowSize         , WandX::Size          );};
+proxy_struct       (ConsoleScreenBufferInfoEx, CONSOLE_SCREEN_BUFFER_INFOEX                       ) {
+	proxy_prop_size(                           cbSize                      , ULONG                );
+	proxy_prop_sync(Size                     , dwSize                      , WandX::Size          );
+	proxy_prop_sync(CursorPosition           , dwCursorPosition            , WandX::Point         );
+	proxy_prop_sync(Attributes               , wAttributes                 , ConsoleAttribute     );
+	proxy_prop_sync(WindowRect               , srWindow                    , WandX::Rect          );
+	proxy_prop_sync(MaximumWindowSize        , dwMaximumWindowSize         , WandX::Size          );
+	proxy_prop_sync(PopupAttributes          , wPopupAttributes            , ConsoleAttribute     );
+	proxy_prop_sync(FullscreenSupported      , bFullscreenSupported        , bool                 );
+	proxy_prop_arrc(ColorTable               , ColorTable                  , COLORREF             );};
+proxy_struct       (ConsoleFontInfo          , CONSOLE_FONT_INFO                                  ) {
+	proxy_prop_sync(Font                     , nFont                       , DWORD                );
+	proxy_prop_sync(FontSize                 , dwFontSize                  , WandX::Size          );};
+proxy_struct       (ConsoleFontInfoEx        , CONSOLE_FONT_INFOEX                                ) {
+	proxy_prop_size(                           cbSize                      , ULONG                );
+	proxy_prop_sync(Font                     , nFont                       , DWORD                );
+	proxy_prop_sync(FontSize                 , dwFontSize                  , WandX::Size          );
+//	proxy_prop_sync(FontFamily               , FontFamily                  , UINT                 );
+	proxy_prop_sync(FontWeight               , FontWeight                  , UINT                 );
+//	proxy_prop_sync(FaceName                 , FaceName                    , StringW              );
+};
+enum_flags(ConsoleMode            , DWORD                                         ,
+		   Default                = 0                                              ,
+		/* Input modes-------------------------------------------------------------*/
+		   InputProcessed         = ENABLE_PROCESSED_INPUT                         ,
+		   InputLine              = ENABLE_LINE_INPUT                              ,
+		   InputEcho              = ENABLE_ECHO_INPUT                              ,
+		   InputWindow            = ENABLE_WINDOW_INPUT                            ,
+		   InputMouse             = ENABLE_MOUSE_INPUT                             ,
+		   InputInsertMode        = ENABLE_INSERT_MODE                             ,
+		   InputQuickEdit         = ENABLE_QUICK_EDIT_MODE | ENABLE_EXTENDED_FLAGS ,
+		   InputQuickEditDisable  = ENABLE_EXTENDED_FLAGS                          ,
+		   AutoPosition           = ENABLE_AUTO_POSITION                           ,
+		/* Output modes------------------------------------------------------------*/
+		   OutputProcessed        = ENABLE_PROCESSED_OUTPUT                        ,
+		   OutputWrapAtEol        = ENABLE_WRAP_AT_EOL_OUTPUT                      ,
+		   OutputVirtualTerminal  = ENABLE_VIRTUAL_TERMINAL_PROCESSING             ,
+		   OutputLvbGridWorldwide = ENABLE_LVB_GRID_WORLDWIDE                     );
+class_chain_end(ConsoleOutput, KernalObject) {
+public:
+	using Super = KernalObject<ConsoleOutput>;
+
+	class_super_constructor();
+	ConsoleOutput() : Super(Native::GetStdHandle(STD_OUTPUT_HANDLE)) {}
+
+#pragma region Methods
+	class_method(ActiveScreenBuffer, void, (), to(Native::SetConsoleActiveScreenBuffer(self)));
+
+	class_method(FillAttributes, Int32U, (ConsoleAttribute attr, DWORD len, WandX::Point pos = 0), as(Native::FillConsoleOutputAttribute(self, (WORD)attr, len, pos, &len), len));
+	class_method(WriteAttributes, Int32U, (const ConsoleAttribute *pAttr, DWORD len, WandX::Point pos = 0), as(Native::WriteConsoleOutputAttribute(self, (const WORD *)pAttr, len, pos, &len), len));
+	class_method(ReadAttributes, Int32U, (ConsoleAttribute *pAttr, DWORD len, WandX::Point pos = 0), as(Native::ReadConsoleOutputAttribute(self, (WORD *)pAttr, len, pos, &len), len));
+
+	class_method(Fill, Int32U, (CHAR ch, DWORD len, WandX::Point pos = 0), as(Native::FillConsoleOutputCharacter<false>(self, ch, len, pos, &len), len));
+	class_method(Fill, Int32U, (WCHAR ch, DWORD len, WandX::Point pos = 0), as(Native::FillConsoleOutputCharacter<true>(self, ch, len, pos, &len), len));
+
+	class_method(Write, Int32U, (LPCSTR pStr, DWORD len), as(Native::WriteConsole<false>(self, pStr, len, &len, O), len));
+	class_method(Write, Int32U, (LPCWSTR pStr, DWORD len), as(Native::WriteConsole<true>(self, pStr, len, &len, O), len));
+
+	class_method(Read, Int32U, (LPSTR pStr, DWORD len), as(Native::ReadConsole<false>(self, pStr, len, &len, O), len));
+	class_method(Read, Int32U, (LPWSTR pStr, DWORD len), as(Native::ReadConsole<true>(self, pStr, len, &len, O), len));
+
+	class_method(Write, Int32U, (LPCSTR pStr, DWORD len, WandX::Point pos), as(Native::WriteConsoleOutputCharacter(self, pStr, len, pos, &len), len));
+	class_method(Write, Int32U, (LPCWSTR pStr, DWORD len, WandX::Point pos), as(Native::WriteConsoleOutputCharacter(self, pStr, len, pos, &len), len));
+
+	class_method(Read, Int32U, (LPSTR pStr, DWORD len, WandX::Point pos), as(Native::ReadConsoleOutputCharacter(self, pStr, len, pos, &len), len));
+	class_method(Read, Int32U, (LPWSTR pStr, DWORD len, WandX::Point pos), as(Native::ReadConsoleOutputCharacter(self, pStr, len, pos, &len), len));
+
+	// WriteConsoleOutput
+	// ReadConsoleOutput
+
+	// GenerateConsoleCtrlEvent
+	// CreateConsoleScreenBuffer
+	// ScrollConsoleScreenBuffer
+
+	// Extended Functions
+
+	class_method(Write, Int32U, (const StringA &str), as(Write( (LPCSTR)str, (DWORD)str.Length())));
+	class_method(Write, Int32U, (const StringW &str), as(Write((LPCWSTR)str, (DWORD)str.Length())));
+
+#pragma endregion
+
+#pragma region Properties
+	// WindowSize SetConsoleWindowInfo
+	class_prop_map(bool, FullScreen, to,
+				  (DWORD mode = 0; Native::GetConsoleDisplayMode(&mode), mode == CONSOLE_FULLSCREEN_MODE),
+				  (Native::SetConsoleDisplayMode(self, value ? CONSOLE_FULLSCREEN_MODE : CONSOLE_WINDOWED_MODE, O)));
+	class_prop_map(ConsoleMode, Modes, of,
+				  (Native::GetConsoleMode(self, &value)),
+				  (Native::SetConsoleMode(self, (DWORD)value)));
+	class_prop_get(ConsoleScreenBufferInfo, ScreenBufferInfo, of,
+				  (Native::GetConsoleScreenBufferInfo(self, &value)));
+	class_prop_map(ConsoleScreenBufferInfoEx, ScreenBufferInfoEx, of,
+				  (Native::GetConsoleScreenBufferInfoEx(self, &value)),
+				  (Native::SetConsoleScreenBufferInfoEx(self, &value)));
+	class_prop_map(WandX::Size, ScreenBufferSize, as,
+				  (ScreenBufferInfo().Size()),
+				  (Native::SetConsoleScreenBufferSize(self, value)));
+	class_prop_get(WandX::Size, LargestWindowSize, as,
+				  (Native::GetLargestConsoleWindowSize(self)));
+	class_prop_map(ConsoleAttribute, Attributes, as,
+				  (ScreenBufferInfo().Attributes()),
+				  (Native::SetConsoleTextAttribute(self, (WORD)value)));
+	// Font
+	class_prop_get(ConsoleFontInfo, FontInfo, of,
+				  (Native::GetCurrentConsoleFont(self, false, &value)));
+	class_prop_map(ConsoleFontInfoEx, FontInfoEx, of,
+				  (Native::GetCurrentConsoleFontEx(self, false, &value)),
+				  (Native::SetCurrentConsoleFontEx(self, false, &value)));
+	class_prop_get(WandX::Size, FontSize, as,
+				  (Native::GetConsoleFontSize(self, 0)));
+	// Cursor Controls
+	class_prop_map(ConsoleCursorInfo, CursorInfo, of,
+				  (Native::GetConsoleCursorInfo(self, &value)),
+				  (Native::SetConsoleCursorInfo(self, &value)));
+	class_prop_map(WandX::Point, CursorPosition, as,
+				  (ScreenBufferInfo().CursorPosition()),
+				  (Native::SetConsoleCursorPosition(self, value)));
+	class_prop_map(bool, CursorVisible, as,
+				  (CursorInfo().Visible()),
+				  (CursorInfo(CursorInfo().Visible(value)))); 
+#pragma endregion
+
+};
+
+class_chain_end(ConsoleInput, KernalObject) {
+public:
+	using Super = KernalObject<ConsoleInput>;
+	class_super_constructor();
+	ConsoleInput() : Super(Native::GetStdHandle(STD_INPUT_HANDLE)) {}
+
+#pragma region Methods
+	class_method(FlushInputBuffer, void, (), to(Native::FlushConsoleInputBuffer(self)));
+
+	// ReadConsoleInput
+	// PeekConsoleInput
+	// WriteConsoleInput
+#pragma endregion
+
+#pragma region Properties
+	class_prop_get(DWORD, NumberOfInputEvents, of,
+				  (Native::GetNumberOfConsoleInputEvents(self, &value)));
+#pragma endregion
+
+};
+
+class_extended(IConsole, ConsoleOutput) {
+	ConsoleOutput error = Native::GetStdHandle(STD_ERROR_HANDLE);
+	ConsoleInput input = Native::GetStdHandle(STD_INPUT_HANDLE);
+public:
+
+	IConsole() {}
+	IConsole(IConsole &&) = default;
+	IConsole(IConsole const &) = default;
+	IConsole(ConsoleOutput output, ConsoleInput input = O, ConsoleOutput error = O) {}
+
+#pragma region Methods
+	class_method(Attach, void, (DWORD pid), to(Native::AttachConsole(pid)));
+	class_method(Alloc, void, (), to(Native::AllocConsole()));
+	class_method(Free, void, (), to(Native::FreeConsole()));
+
+	// SetConsoleCtrlHandler
+	// GetConsoleProcessList
+
+	//AddConsoleAlias
+	//GetConsoleAlias
+	//GetConsoleAliasesLength
+	//GetConsoleAliasExesLength
+	//GetConsoleAliases
+	//GetConsoleAliasExes
+
+	// Extended Functions
+
+	class_method(Clear, void, (), to(Fill(T(' '), ScreenBufferInfo().Size().Square()); CursorPosition(0)));
+	class_method(Color, void, (ConsoleAttribute wAttributes), to(FillAttributes(wAttributes, ScreenBufferInfo().Size().Square()); Attributes(wAttributes)));
+#pragma endregion
+
+#pragma region Properties
+	class_prop_map(ConsoleOutput, GlobalOutput, as,
+				  (Native::GetStdHandle(STD_OUTPUT_HANDLE)),
+				  (Native::SetStdHandle(STD_OUTPUT_HANDLE, value)));
+	class_prop_map(ConsoleOutput, ErrorOutput, as,
+				  (Native::GetStdHandle(STD_ERROR_HANDLE)),
+				  (Native::SetStdHandle(STD_ERROR_HANDLE, value)));
+	//class_prop_map(ConsoleInput, GlobalInput, as, 
+	//			  (Native::GetStdHandle(STD_INPUT_HANDLE)),
+	//			  (Native::SetStdHandle(STD_INPUT_HANDLE, value)));
+	//	inline CWindow Window() const ret_as(Native::GetConsoleWindow());
+
+	//template<class TCHAR>
+	///* W */ inline auto& Title( const TCHAR *lpTitle) ret_to_self(Native::SetConsoleTitle(lpTitle));
+	//template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenTitle>
+	///* R */ inline auto Title() const {
+	//	StringX<IsUnicode> str(MaxLen);
+	//	auto len = Native::GetConsoleTitle(str, (int)MaxLen);
+	//	return right_cast(str.Resize(len));
+	//}
+	//template<SizeT MaxLen = MaxLenTitle>
+	///* R */ inline auto  TitleA() const ret_as(Title<false, MaxLen>());
+	//template<SizeT MaxLen = MaxLenTitle>
+	///* R */ inline auto  TitleW() const ret_as(Title<true, MaxLen>());
+
+#	define class_prop_strfix_getas_WAO(name, maxlen, body) \
+	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = maxlen> \
+	inline StringX<IsUnicode> name() const { \
+		StringX<IsUnicode> str(MaxLen); \
+		auto len = body; \
+		return right_cast(str.Resize(len)); \
+	} \
+	template<SizeT MaxLen = maxlen> const \
+	inline StringA name##A() const ret_as(name<false, MaxLen>()); \
+	template<SizeT MaxLen = maxlen> const \
+	inline StringW name##W() const ret_as(name<true, MaxLen>())
+
+	class_prop_strfix_getas_WAO(OriginalTitle, MaxLenTitle,
+								(Native::GetConsoleOriginalTitle(str, (int)MaxLen)));
+
+
+	class_prop_map(UINT, CodePage, as,
+				  (Native::GetConsoleCP()),
+				  (Native::SetConsoleCP(value)));
+	class_prop_map(UINT, OutputCodePage, as,
+				  (Native::GetConsoleOutputCP()),
+				  (Native::SetConsoleOutputCP(value)));
+	class_prop_get(ConsoleSelectionInfo, SelectionInfo, of,
+				  (Native::GetConsoleSelectionInfo(&value)));
+	class_prop_map(ConsoleHistoryInfo, HistoryInfo, of,
+				  (Native::GetConsoleHistoryInfo(&value)),
+				  (Native::SetConsoleHistoryInfo(&value)));
+	class_prop_get(DWORD, NumberOfMouseButtons, of,
+				  (Native::GetNumberOfConsoleMouseButtons(&value)));
+#pragma endregion
+
+} Console;

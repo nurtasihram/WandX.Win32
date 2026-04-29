@@ -1,0 +1,58 @@
+#include "WandX.Win32.Resources.h"
+
+#ifndef DLL_INL_LIST
+#	error Please define DLL_INL_LIST as list registered functions / variables
+#endif
+
+#ifdef DLL_EXPORTS
+#	undef DLL_EXPORTS
+#	define DLL_EXPORT extern "C" __declspec(dllexport)
+#	define REG_FUNC(ret, name, ...) DLL_EXPORT ret name(__VA_ARGS__);
+#	define REG_VAR(type, name) DLL_EXPORT type name;
+#	include DLL_INL_LIST
+#	undef REG_FUNC
+#	undef REG_VAR
+#	define REG_FUNC(ret, name, ...) DLL_EXPORT ret name(__VA_ARGS__)
+#	define REG_VAR(type, name) DLL_EXPORT type name
+#else
+#	ifndef MOD_NAME
+#		error Please define MOD_NAME as namespace of module before include this file
+#	endif
+namespace MOD_NAME {
+#	undef MOD_NAME
+using namespace WandX;
+extern WandX::Module Module;
+#	define REG_FUNC(ret, name, ...) extern ret(*name)(__VA_ARGS__);
+#	define REG_VAR(type, name) extern type name;
+#	include DLL_INL_LIST
+#	undef REG_FUNC
+#	undef REG_VAR
+SizeT LoadDll(LPCTSTR lpFilenameDLL);
+void CloseDll();
+#	ifdef DLL_IMPORTS
+#	undef DLL_IMPORTS
+WandX::Module Module = O;
+#	define REG_FUNC(ret, name, ...) ret(*name)(__VA_ARGS__) = O;
+#	include DLL_INL_LIST
+#	undef REG_FUNC
+#	undef REG_VAR
+SizeT LoadDll(LPCTSTR lpFilenameDLL) {
+	Module = WandX::Module::Library(lpFilenameDLL);
+	SizeT CountMembers = 0;
+#	define REG_FUNC(ret, name, ...) \
+	if ((name = Module.Symbol<ret(__VA_ARGS__)>(#name))) ++CountMembers;
+#	define REG_VAR(type, name) \
+	if ((name = Module.Symbol<type>(#name))) ++CountMembers;
+#	include DLL_INL_LIST
+#	undef REG_FUNC
+#	undef REG_VAR
+	return CountMembers;
+}
+void CloseDll() {
+	Module.Free();
+}
+#	endif
+}
+#endif
+
+#undef DLL_INL_LIST

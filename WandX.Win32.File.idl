@@ -1,0 +1,473 @@
+#pragma region File
+
+proxy_struct(FileTime, FILETIME) {
+	FileTime(Nu) {}
+	FileTime() {}
+	FileTime(const FILETIME &ft) : Super(ft) {}
+	FileTime(const SYSTEMTIME &st) nt_assert(SystemTimeToFileTime(&st, &self));
+	FileTime(LARGE_INTEGER li) : Super(reuse_cast<FILETIME>(li)){}
+public:
+	static inline FileTime SystemTime() ret_to(FileTime ft; GetSystemTimeAsFileTime(&ft), ft);
+public:
+	inline FileTime ToLocal() safe_ret_to(FILETIME ft, ::FileTimeToLocalFileTime(&self, &ft), ft);
+	inline FileTime ToUniversal() safe_ret_to(FILETIME ft, ::LocalFileTimeToFileTime(&self, &ft), ft);
+public:
+	template<bool IsUnicode = Native::IsUnicode>
+	inline StringX<IsUnicode> toString() const ret_as(((SysTime)self).toString<IsUnicode>());
+	inline StringA toStringA() const ret_as(toString<false>());
+	inline StringW toStringW() const ret_as(toString<true>());
+
+public:
+	inline operator SYSTEMTIME() const safe_ret_to(SYSTEMTIME st, FileTimeToSystemTime(&self, &st), st);
+	inline operator LARGE_INTEGER() const ret_as(reuse_cast<LARGE_INTEGER>(self));
+};
+
+enum_flags(FileAccess                   , HandleAccess              ,
+		   Default                      = 0                         ,
+		   ReadData                     = FILE_READ_DATA            , // file & pipe
+		   ListDirectory                = FILE_LIST_DIRECTORY       , // directory
+		   WriteData                    = FILE_WRITE_DATA           , // file & pipe
+		   AddFile                      = FILE_ADD_FILE             , // directory
+		   AppendData                   = FILE_APPEND_DATA          , // file
+		   AddSubdirectory              = FILE_ADD_SUBDIRECTORY     , // directory
+		   CreatePipeInstance           = FILE_CREATE_PIPE_INSTANCE , // named pipe
+		   ReadEA                       = FILE_READ_EA              , // file & directory
+		   WriteEA                      = FILE_WRITE_EA             , // file & directory
+		   Execute                      = FILE_EXECUTE              , // file
+		   Traverse                     = FILE_TRAVERSE             , // directory
+		   DeleteChild                  = FILE_DELETE_CHILD         , // directory
+		   ReadAttributes               = FILE_READ_ATTRIBUTES      , // all
+		   WriteAttributes              = FILE_WRITE_ATTRIBUTES     , // all
+		   GenericRead                  = FILE_GENERIC_READ         ,
+		   GenericWrite                 = FILE_GENERIC_WRITE        ,
+		   GenericExecute               = FILE_GENERIC_EXECUTE      ,
+		   All                          = FILE_ALL_ACCESS           );
+enum_flags(FileAttribute                , DWORD                                ,
+		   No                           = 0                                    ,
+		   ReadOnly                     = FILE_ATTRIBUTE_READONLY              ,
+		   Hidden                       = FILE_ATTRIBUTE_HIDDEN                ,
+		   System                       = FILE_ATTRIBUTE_SYSTEM                ,
+		   Directory                    = FILE_ATTRIBUTE_DIRECTORY             ,
+		   Archive                      = FILE_ATTRIBUTE_ARCHIVE               ,
+		   Device                       = FILE_ATTRIBUTE_DEVICE                ,
+		   Normal                       = FILE_ATTRIBUTE_NORMAL                ,
+		   Temporary                    = FILE_ATTRIBUTE_TEMPORARY             ,
+		   SparseFile                   = FILE_ATTRIBUTE_SPARSE_FILE           ,
+		   ReparsePoint                 = FILE_ATTRIBUTE_REPARSE_POINT         ,
+		   Compressed                   = FILE_ATTRIBUTE_COMPRESSED            ,
+		   Offline                      = FILE_ATTRIBUTE_OFFLINE               ,
+		   NotContentIndexed            = FILE_ATTRIBUTE_NOT_CONTENT_INDEXED   ,
+		   Encrypted                    = FILE_ATTRIBUTE_ENCRYPTED             ,
+		   IntegrityStream              = FILE_ATTRIBUTE_INTEGRITY_STREAM      ,
+		   Virtual                      = FILE_ATTRIBUTE_VIRTUAL               ,
+		   NoScrubData                  = FILE_ATTRIBUTE_NO_SCRUB_DATA         ,
+		   EA                           = FILE_ATTRIBUTE_EA                    ,
+		   Pinned                       = FILE_ATTRIBUTE_PINNED                ,
+		   Unpinned                     = FILE_ATTRIBUTE_UNPINNED              ,
+		   RecallOnOpen                 = FILE_ATTRIBUTE_RECALL_ON_OPEN        ,
+		   RecallOnDataAccess           = FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS );
+enum_flags(FileFlag                     , DWORD                                     ,
+		   WriteThrough                 = FILE_FLAG_WRITE_THROUGH                   ,
+		   Overlapped                   = FILE_FLAG_OVERLAPPED                      ,
+		   NoBuffering                  = FILE_FLAG_NO_BUFFERING                    ,
+		   RandomAccess                 = FILE_FLAG_RANDOM_ACCESS                   ,
+		   SequentialScan               = FILE_FLAG_SEQUENTIAL_SCAN                 ,
+		   DeleteOnClose                = FILE_FLAG_DELETE_ON_CLOSE                 ,
+		   BackupSemantics              = FILE_FLAG_BACKUP_SEMANTICS                ,
+		   PosixSemantics               = FILE_FLAG_POSIX_SEMANTICS                 ,
+		   SessionAware                 = FILE_FLAG_SESSION_AWARE                   ,
+		   OpenReparsePoint             = FILE_FLAG_OPEN_REPARSE_POINT              ,
+		   OpenNoRecall                 = FILE_FLAG_OPEN_NO_RECALL                  ,
+		   FirstPipeInstance            = FILE_FLAG_FIRST_PIPE_INSTANCE             ,
+		   OpenRequiringOplock          = FILE_FLAG_OPEN_REQUIRING_OPLOCK         /*,
+		   IgnoreImpersonatedDevicemap  = FILE_FLAG_IGNORE_IMPERSONATED_DEVICEMAP */); 
+enum_flags(FileShares        , DWORD                          ,
+		   No                = 0                              ,
+		   Read              = FILE_SHARE_READ                ,
+		   Write             = FILE_SHARE_WRITE               ,
+		   Delete            = FILE_SHARE_DELETE              );
+enum_class(FileTypes         , DWORD                          , 
+		   Unknown           = FILE_TYPE_UNKNOWN              ,
+		   Disk              = FILE_TYPE_DISK                 ,
+		   Char              = FILE_TYPE_CHAR                 ,
+		   Pipe              = FILE_TYPE_PIPE                 ,
+		   Remote            = FILE_TYPE_REMOTE               );
+enum_flags(PageProtect       , DWORD                          ,
+		   NoAccess          = PAGE_NOACCESS                  ,
+		   ReadOnly          = PAGE_READONLY                  ,
+		   ReadWrite         = PAGE_READWRITE                 ,
+		   WriteCopy         = PAGE_WRITECOPY                 ,
+		   Execute           = PAGE_EXECUTE                   ,
+		   ExecuteRead       = PAGE_EXECUTE_READ              ,
+		   ExecuteReadWrite  = PAGE_EXECUTE_READWRITE         ,
+		   ExecuteWriteCopy  = PAGE_EXECUTE_WRITECOPY         );
+enum_flags(MapAccess         , DWORD                          ,
+		   Write             = FILE_MAP_WRITE                 ,
+		   Read              = FILE_MAP_READ                  ,
+		   All               = FILE_MAP_ALL_ACCESS            ,
+		   Execute           = FILE_MAP_EXECUTE               ,
+		   Copy              = FILE_MAP_COPY                  ,
+		   Targets           = FILE_MAP_TARGETS_INVALID       ,
+		   LargePages        = FILE_MAP_LARGE_PAGES           ,
+		   ReadWrite         = FILE_MAP_WRITE | FILE_MAP_READ );
+//enum_flags(FileDispose)
+struct FileTimes { FileTime Creation, LastAccess, LastWrite; };
+proxy_struct       (FileBaseInfo  , FILE_BASIC_INFO                ) {
+	proxy_prop_sync(TimeCreation  , CreationTime   , FileTime      );
+	proxy_prop_sync(TimeLastAccess, LastAccessTime , FileTime      );
+	proxy_prop_sync(TimeLastWrite , LastWriteTime  , FileTime      );
+	proxy_prop_sync(TimeChange    , ChangeTime     , FileTime      );
+	proxy_prop_sync(Attributes    , FileAttributes , FileAttribute );};
+class File : public WandX::KernalObject<File> {
+public:
+	using Super = KernalObject<File>;
+protected:
+	File(HANDLE h) : Super(h) {}
+	File(const File &f) : Super(f) {}
+public:
+	File() {}
+	File(Nu) {}
+	File(File &f) : Super(f) {}
+	File(File &&f) : Super(f) {}
+public:
+	template<bool IsUnicode = Native::IsUnicode>
+	class CreateStruct {
+		using LPCTSTR = LPCXSTR<IsUnicode>;
+		LPCTSTR lpFileName;
+		FileAccess dwDesiredAccess = FileAccess::Default;
+		FileShares dwShareMode = FileShares::No;
+		LPSECURITY_ATTRIBUTES lpAttributes = O;
+		DWORD dwCreationDisposition = 0;
+		FileAttribute dwFlagsAndAttributes = FileAttribute::No;
+		HANDLE hTemplateFile = O;
+	public:
+		CreateStruct(LPCTSTR lpFileName) : lpFileName(lpFileName) {}
+	public:
+		inline auto &Accesses(FileAccess dwDesiredAccess) ret_to_self(this->dwDesiredAccess = dwDesiredAccess);
+		inline auto &Share(FileShares dwShareMode) ret_to_self(this->dwShareMode = dwShareMode);
+		inline auto &Security(LPSECURITY_ATTRIBUTES lpAttributes) ret_to_self(this->lpAttributes = lpAttributes);
+		inline auto &Template(HANDLE hTemplateFile) ret_to_self(this->hTemplateFile = hTemplateFile);
+		inline auto &Attributes(FileAttribute dwAttributes) ret_to_self(this->dwFlagsAndAttributes = dwAttributes);
+		inline auto &Flags(FileFlag dwFlags) ret_to_self(this->dwFlagsAndAttributes = dwFlags.yield());
+	public:
+		inline auto &CreateNew() ret_to_self(this->dwCreationDisposition = CREATE_NEW);
+		inline auto &CreateAlways() ret_to_self(this->dwCreationDisposition = CREATE_ALWAYS);
+		inline auto &OpenExisting() ret_to_self(this->dwCreationDisposition = OPEN_EXISTING);
+		inline auto &OpenAlways() ret_to_self(this->dwCreationDisposition = OPEN_ALWAYS);
+		inline auto &TruncateExisting() ret_to_self(this->dwCreationDisposition = TRUNCATE_EXISTING);
+	public:
+		inline operator File() ret_as(Native::CreateFile(lpFileName, dwDesiredAccess.yield(), dwShareMode.yield(), lpAttributes, dwCreationDisposition, dwFlagsAndAttributes.yield(), hTemplateFile));
+	};
+	static inline CreateStruct<false> Create(LPCSTR lpFileName) ret_as(lpFileName);
+	static inline CreateStruct<true> Create(LPCWSTR lpFileName) ret_as(lpFileName);
+	template<bool IsUnicode = Native::IsUnicode>
+	class MappingCreateStruct {
+		using LPCTSTR = LPCXSTR<IsUnicode>;
+		HANDLE hFile;
+		LPSECURITY_ATTRIBUTES lpAttributes = O;
+		DWORD flProtect = PageProtect::ReadWrite.yield();
+		DWORD dwMaximumSizeHigh = 0;
+		DWORD dwMaximumSizeLow = 0;
+		LPCTSTR lpName;
+	public:
+		MappingCreateStruct(HANDLE hFile, LPCTSTR lpName, Int64U size) :
+			hFile(hFile),
+			dwMaximumSizeHigh((DWORD)(size >> 32)), dwMaximumSizeLow((DWORD)size),
+			lpName(lpName) {}
+	public:
+		inline auto &Security(LPSECURITY_ATTRIBUTES lpAttributes) ret_to_self(this->lpAttributes = lpAttributes);
+		inline auto &Protect(PageProtect pa) ret_to_self(this->flProtect = pa.yield());
+		inline auto &Name(LPCTSTR lpName) ret_to_self(this->lpName = lpName);
+	public:
+		inline operator File() safe_ret_as(auto h = Native::CreateFileMapping(hFile, lpAttributes, flProtect, dwMaximumSizeHigh, dwMaximumSizeLow, lpName), h);
+	};
+	inline MappingCreateStruct<> CreateMapping(Int64U size) ret_as({ self, O, size });
+	inline MappingCreateStruct<false> CreateMapping(LPCSTR lpName, Int64U size) ret_as({ self, lpName, size });
+	inline MappingCreateStruct<true> CreateMapping(LPCWSTR lpName, Int64U size) ret_as({ self, lpName, size });
+	template<bool IsUnicode = Native::IsUnicode>
+	class MappingOpenStruct {
+		using LPCTSTR = LPCXSTR<IsUnicode>;
+		DWORD dwDesiredAccess = MapAccess::ReadWrite.yield();
+		bool bInheritHandle = false;
+		LPCTSTR lpName;
+	public:
+		MappingOpenStruct(LPCTSTR lpName) : lpName(lpName) {}
+	public:
+		inline auto &Accesses(MapAccess pa) ret_to_self(this->dwDesiredAccess = pa.yield());
+		inline auto &Inherit(bool bInheritHandle) ret_to_self(this->bInheritHandle = bInheritHandle);
+		inline auto &Name(LPCTSTR lpName) ret_to_self(this->lpName = lpName);
+	public:
+		inline operator File() safe_ret_as(auto h = Native::OpenFileMapping(dwDesiredAccess, bInheritHandle, lpName), h);
+	};
+	static inline MappingOpenStruct<false> OpenMapping(LPCSTR lpName) ret_as(lpName);
+	static inline MappingOpenStruct<true> OpenMapping(LPCWSTR lpName) ret_as(lpName);
+public:
+	static inline void Delete(LPCSTR lpFileName) ret_as(Native::DeleteFile(lpFileName));
+	static inline void Delete(LPCWSTR lpFileName) ret_as(Native::DeleteFile(lpFileName));
+	static inline void Copy(LPCSTR lpExistingFileName, LPCSTR lpNewFileName, bool bFailIfExists = false) ret_to(Native::CopyFile(lpExistingFileName, lpNewFileName, bFailIfExists));
+	static inline void Copy(LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, bool bFailIfExists = false) ret_to(Native::CopyFile(lpExistingFileName, lpNewFileName, bFailIfExists));
+	static inline void Move(LPCSTR lpExistingFileName, LPCSTR lpNewFileName) ret_to(Native::MoveFile(lpExistingFileName, lpNewFileName));
+	static inline void Move(LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName) ret_to(Native::MoveFile(lpExistingFileName, lpNewFileName));
+public:
+	class MapPointer {
+		friend class File;
+		mutable void *ptr = O;
+	protected:
+		MapPointer(void *ptr) : ptr(ptr) {}
+		MapPointer(const MapPointer &m) : ptr(m.ptr) ret_to(m.ptr = O);
+	public:
+		MapPointer() {}
+		MapPointer(Nu) {}
+		MapPointer(MapPointer &p) : ptr(p.ptr) ret_to(p.ptr = O);
+		MapPointer(MapPointer &&p) : ptr(p.ptr) ret_to(p.ptr = O);
+		~MapPointer() {
+			if (ptr)
+				UnmapViewOfFile(ptr);
+			ptr = O;
+		}
+		template<class AnyType>
+		inline operator AnyType *() ret_as((AnyType *)ptr);
+		inline void *operator&() ret_as(ptr);
+	};
+	inline MapPointer MapView(MapAccess acs = MapAccess::All, Int64U offset = 0, SizeT size = 0) safe_ret_as(auto p = MapViewOfFile(self, acs.yield(), (DWORD)(offset >> 32), (DWORD)offset, size), p);
+
+	inline DWORD Read(LPVOID lpBuffer, DWORD dwNumberOfBytesToRead) safe_ret_as(ReadFile(self, lpBuffer, dwNumberOfBytesToRead, &dwNumberOfBytesToRead, O), dwNumberOfBytesToRead);
+	inline DWORD Write(LPCVOID lpBuffer, DWORD dwNumberOfBytesToRead) safe_ret_as(WriteFile(self, lpBuffer, dwNumberOfBytesToRead, &dwNumberOfBytesToRead, O), dwNumberOfBytesToRead);
+
+	inline void Flush() safe_ret_as(FlushFileBuffers(self));
+
+#pragma region Properties
+	class_prop_get(Int64U, Size, of,
+				  (GetFileSizeEx(self, (PLARGE_INTEGER)&value)));
+	class_prop_get(FileTimes, Time, of,
+				  (GetFileTime(self, &value.Creation, &value.LastAccess, &value.LastWrite)));
+	class_prop_get(FileBaseInfo, BaseInfo, of,
+				  (GetFileInformationByHandleEx(self, FileBasicInfo, &value, sizeof(value))));
+	class_prop_get(FileTypes, Type, as,
+				  (FileTypes::value_cast(GetFileType(self))));
+#pragma endregion
+
+};
+using CFile = ProxyView<File>;
+#pragma endregion
+
+#pragma region Comm
+enum_class(Parities        , BYTE          ,
+		   No              = NOPARITY      ,
+		   Odd             = ODDPARITY     ,
+		   Even            = EVENPARITY    ,
+		   Mark            = MARKPARITY    ,
+		   Space           = SPACEPARITY   );
+enum_class(StopBits        , BYTE          ,
+		   One             = ONESTOPBIT    ,
+		   One5            = ONE5STOPBITS  ,
+		   Two             = TWOSTOPBITS   );
+enum_flags(CommDataBit     , WORD          ,
+		   _5              = DATABITS_5    ,
+		   _6              = DATABITS_6    ,
+		   _7              = DATABITS_7    ,
+		   _8              = DATABITS_8    ,
+		   _16             = DATABITS_16   ,
+		   _16X            = DATABITS_16X  );
+enum_flags(CommStopParity  , WORD         ,
+		   _1              = STOPBITS_10  ,
+		   _15             = STOPBITS_15  ,
+		   _2              = STOPBITS_20  ,
+		   None            = PARITY_NONE  ,
+		   Odd             = PARITY_ODD   ,
+		   Even            = PARITY_EVEN  ,
+		   Mark            = PARITY_MARK  ,
+		   Space           = PARITY_SPACE );
+enum_class(DtrCtrl         , DWORD                 ,
+		   Disable         = DTR_CONTROL_DISABLE   ,
+		   Enable          = DTR_CONTROL_ENABLE    ,
+		   HandShake       = DTR_CONTROL_HANDSHAKE );
+enum_class(RtsCtrl         , DWORD                 ,
+		   Disable         = RTS_CONTROL_DISABLE   ,
+		   Enable          = RTS_CONTROL_ENABLE    ,
+		   HandShake       = RTS_CONTROL_HANDSHAKE ,
+		   Toggle          = RTS_CONTROL_TOGGLE    );
+enum_flags(ModemStatus     , DWORD                 ,
+		   Default         = 0                     ,
+		   CTS             = MS_CTS_ON             ,
+		   DSR             = MS_DSR_ON             ,
+		   Ring            = MS_RING_ON            ,
+		   RLSD            = MS_RLSD_ON            );
+enum_flags(CommPurge       , DWORD                 ,
+		   TxAbort         = PURGE_TXABORT         ,
+		   RxAbort         = PURGE_RXABORT         ,
+		   TxClear         = PURGE_TXCLEAR         ,
+		   RxClear         = PURGE_RXCLEAR         ,
+		   All             = PURGE_TXABORT         |
+		   				     PURGE_RXABORT         |
+						     PURGE_TXCLEAR         |
+						     PURGE_RXCLEAR         );
+enum_flags(CommEvent       , DWORD                 ,
+		   Default         = 0                     ,
+		   RxChar          = EV_RXCHAR             ,
+		   RxFlag          = EV_RXFLAG             ,
+		   TxEmpty         = EV_TXEMPTY            ,
+		   Cts             = EV_CTS                ,
+		   Dsr             = EV_DSR                ,
+		   Rlsd            = EV_RLSD               ,
+		   Break           = EV_BREAK              ,
+		   Err             = EV_ERR                ,
+		   Ring            = EV_RING               ,
+		   PErr            = EV_PERR               ,
+		   Rx80Full        = EV_RX80FULL           ,
+		   Event1          = EV_EVENT1             ,
+		   Event2          = EV_EVENT2             );
+enum_class(CommSubTypes    , DWORD                 ,
+		   Unspecified     = PST_UNSPECIFIED       ,
+		   RS232           = PST_RS232             ,
+		   ParallelPort    = PST_PARALLELPORT      ,
+		   RS422           = PST_RS422             ,
+		   RS423           = PST_RS423             ,
+		   RS449           = PST_RS449             ,
+		   Modem           = PST_MODEM             ,
+		   Fax             = PST_FAX               ,
+		   Scanner         = PST_SCANNER           ,
+		   NetworkBridge   = PST_NETWORK_BRIDGE    ,
+		   Lat             = PST_LAT               ,
+		   TcpIpTelnet     = PST_TCPIP_TELNET      ,
+		   X25             = PST_X25               );
+enum_flags(CommCapability  , DWORD                 ,
+		   DTRDSR          = PCF_DTRDSR            ,
+		   RTSCTS          = PCF_RTSCTS            ,
+		   RLSD            = PCF_RLSD              ,
+		   ParityCheck     = PCF_PARITY_CHECK      ,
+		   XONXOFF         = PCF_XONXOFF           ,
+		   SetXChar        = PCF_SETXCHAR          ,
+		   Totaltimeouts   = PCF_TOTALTIMEOUTS     ,
+		   IntTimeouts     = PCF_INTTIMEOUTS       ,
+		   SpecialChars    = PCF_SPECIALCHARS      ,
+		   _16BitMode      = PCF_16BITMODE         );
+enum_flags(CommBaud     , DWORD           ,
+		   _075         = BAUD_075        ,
+		   _110         = BAUD_110        ,
+		   _134_5       = BAUD_134_5      ,
+		   _150         = BAUD_150        ,
+		   _300         = BAUD_300        ,
+		   _600         = BAUD_600        ,
+		   _1200        = BAUD_1200       ,
+		   _1800        = BAUD_1800       ,
+		   _2400        = BAUD_2400       ,
+		   _4800        = BAUD_4800       ,
+		   _7200        = BAUD_7200       ,
+		   _9600        = BAUD_9600       ,
+		   _14400       = BAUD_14400      ,
+		   _19200       = BAUD_19200      ,
+		   _38400       = BAUD_38400      ,
+		   _56K         = BAUD_56K        ,
+		   _128K        = BAUD_128K       ,
+		   _115200      = BAUD_115200     ,
+		   _57600       = BAUD_57600      ,
+		   _User        = BAUD_USER       );
+enum_flags(CommParam    , DWORD           ,
+		   Parity       = SP_PARITY       ,
+		   Baud         = SP_BAUD         ,
+		   DataBits     = SP_DATABITS     ,
+		   StopBits     = SP_STOPBITS     ,
+		   Handshaking  = SP_HANDSHAKING  ,
+		   ParityCheck  = SP_PARITY_CHECK ,
+		   RLSD         = SP_RLSD         );
+proxy_struct(CommStates, DCB) {
+	CommStates() ret_to(self->DCBlength = sizeof(DCB); self->fBinary = 1);
+	//CommStates(LPCSTR lpDef) : CommStates() safe_ret_as(BuildCommDCBA(lpDef, this));
+	//CommStates(LPCWSTR lpDef) : CommStates() safe_ret_as(BuildCommDCBW(lpDef, this));
+	proxy_prop_sync(BaudRate, BaudRate, DWORD);
+	proxy_prop_sync(ByteSize, ByteSize, BYTE);
+	proxy_prop_sync(Parity, Parity, Parities);
+	proxy_prop_sync(StopBit, StopBits, WandX::StopBits);
+	//proxy_prop_sync(OutxCtsFlow, fOutxCtsFlow, bool);
+	//proxy_prop_sync(OutxDsrFlow, fOutxDsrFlow, bool);
+	//proxy_prop_sync(DtrControl, fDtrControl, DtrCtrl);
+	//proxy_prop_sync(RtsControl, fRtsControl, RtsCtrl);
+	//proxy_prop_sync(DsrSensitivity, fDsrSensitivity, bool);
+	//proxy_prop_sync(TXContinueOnXoff, fTXContinueOnXoff, bool);
+	//proxy_prop_sync(OutX, fOutX, bool);
+	//proxy_prop_sync(InX, fInX, bool);
+	//proxy_prop_sync(Nu, fNull, bool);
+	//proxy_prop_sync(AbortOnError, fAbortOnError, bool);
+	proxy_prop_sync(XonLim, XonLim, WORD);
+	proxy_prop_sync(XoffLim, XoffLim, WORD);
+	proxy_prop_sync(XonChar, XonChar, char);
+	proxy_prop_sync(XoffChar, XoffChar, char);
+	proxy_prop_sync(ErrorChar, ErrorChar, char);
+	proxy_prop_sync(EofChar, EofChar, char);
+	proxy_prop_sync(EvtChar, EvtChar, char);
+};
+proxy_struct(CommProps, COMMPROP) {
+	CommProps() ret_to(self->wPacketLength = sizeof(COMMPROP); self->dwProvSpec1 = COMMPROP_INITIALIZED);
+	CommProps(const COMMPROP &cp) : Super(cp) {}
+	proxy_prop_sync(PacketVersion,wPacketVersion,WORD);
+	// ServiceMask
+	proxy_prop_sync(MaxTxQueue, dwMaxTxQueue, DWORD);
+	proxy_prop_sync(MaxRxQueue, dwMaxRxQueue, DWORD);
+	proxy_prop_sync(MaxBaud, dwMaxBaud, CommBaud);
+	proxy_prop_sync(ProviderSubType, dwProvSubType, CommSubTypes);
+	proxy_prop_sync(ProviderCapabilities, dwProvCapabilities, CommCapability);
+	proxy_prop_sync(SettableParams, dwSettableParams, CommParam);
+	proxy_prop_sync(SettableBaud, dwSettableBaud, CommBaud);
+	proxy_prop_sync(SettableData, wSettableData, CommDataBit);
+	proxy_prop_sync(SettableStopParity, wSettableStopParity, CommStopParity);
+	proxy_prop_sync(CurrentTxQueue, dwCurrentTxQueue, DWORD);
+	proxy_prop_sync(CurrentRxQueue, dwCurrentRxQueue, DWORD);
+	//DWORD dwProvSpec1;
+	//DWORD dwProvSpec2;
+	//WCHAR wcProvChar[1];
+};
+proxy_struct(CommConfig, COMMCONFIG) {
+	//DWORD dwSize;
+	//WORD wVersion;
+	//WORD wReserved;
+	//DCB dcb;
+	//DWORD dwProviderSubType;
+	//DWORD dwProviderOffset;
+	//DWORD dwProviderSize;
+	//WCHAR wcProviderData[1];
+};
+proxy_struct       (CommTimeouts    , COMMTIMEOUTS                       ) {
+	proxy_prop_sync(ReadInterval    , ReadIntervalTimeout         , DWORD);
+	proxy_prop_sync(ReadTotalConst  , ReadTotalTimeoutConstant    , DWORD);
+	proxy_prop_sync(ReadTotalMult   , ReadTotalTimeoutMultiplier  , DWORD);
+	proxy_prop_sync(WriteTotalConst , WriteTotalTimeoutConstant   , DWORD);
+	proxy_prop_sync(WriteTotalMult  , WriteTotalTimeoutMultiplier , DWORD);};
+class Comm : public File {
+public:
+	using Super = File;
+protected:
+	Comm(HANDLE hComm) : Super(hComm) {}
+public:
+	Comm() {}
+
+	class_method(ClearBreak, void, (), to(Native::ClearCommBreak(self)));
+//	inline void ClearErrors(CommClear cc = CommClear::All) ret_to(Native::ClearCommError(self, &cc.yield(), O));
+	class_method(Setup, void, (DWORD dwInQueue, DWORD dwOutQueue), to(Native::SetupComm(self, dwInQueue, dwOutQueue)));
+	class_method(Purge, void, (CommPurge cp = CommPurge::All), to(Native::PurgeComm(self, cp.yield())));
+	class_method(Transmit, void, (char ch), to(Native::TransmitCommChar(self, ch)));
+//	inline void WaitEvent(CommEvent ce = CommEvent::RxChar) ret_to(Native::WaitCommEvent(self, &ce.yield(), O));
+	static inline Comm Open(ULONG uPortNumber, FileAccess desiredAccess, DWORD dwFlagsAndAttributes = 0)
+		ret_as(Native::OpenCommPort(uPortNumber, desiredAccess.yield(), dwFlagsAndAttributes));
+
+#pragma region Properties
+	class_prop_map(CommEvent, Mask, of,
+				  (Native::GetCommMask(self, &value)),
+				  (Native::SetCommMask(self, (DWORD)value)));
+	class_prop_get(WandX::ModemStatus, ModemStatus, of,
+				  (Native::GetCommModemStatus(self, &value)));
+	class_prop_map(CommStates, States, of,
+				  (Native::GetCommState(self, &value)),
+				  (Native::SetCommState(self, &value)));
+	class_prop_map(CommTimeouts, Timeouts, of,
+				  (Native::GetCommTimeouts(self, &value)),
+				  (Native::SetCommTimeouts(self, &value)));
+public: // Property - Config
+	///* W */ inline auto &Config(CommConfig cc) ret_to_self(Native::SetCommConfig(self, &cc, cc.dwSize));
+	///* R */ inline auto Config() const ret_to(CommConfig cc; DWORD size = cc.dwSize; Native::GetCommConfig(self, &cc, &size), cc);
+	class_prop_get(CommProps, Props, of,
+				  (Native::GetCommProperties(self, &value)));
+#pragma endregion
+
+};
+#pragma endregion

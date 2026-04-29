@@ -1,0 +1,1496 @@
+module;
+
+#include <Windows.h>
+#include <CommCtrl.h>
+
+#define WANDX_CPPM_EXPORT_NATIVE
+#include "WandX.Win32.Controls"
+
+export module WandX.Win32.Controls;
+
+import WandX.Win32;
+
+export namespace WandX {
+
+enum_flags(SystemState      , DWORD                        ,
+		   Unavailable      = STATE_SYSTEM_UNAVAILABLE     ,
+		   Selected         = STATE_SYSTEM_SELECTED        ,
+		   Focused          = STATE_SYSTEM_FOCUSED         ,
+		   Pushed           = STATE_SYSTEM_PRESSED         ,
+		   Checked          = STATE_SYSTEM_CHECKED         ,
+		   Mixed            = STATE_SYSTEM_MIXED           ,
+		   ReadOnly         = STATE_SYSTEM_READONLY        ,
+		   HotTracked       = STATE_SYSTEM_HOTTRACKED      ,
+		   Defaulted        = STATE_SYSTEM_DEFAULT         ,
+		   Expanded         = STATE_SYSTEM_EXPANDED        ,
+		   Collapsed        = STATE_SYSTEM_COLLAPSED       ,
+		   Busy             = STATE_SYSTEM_BUSY            ,
+		   Floating         = STATE_SYSTEM_FLOATING        ,
+		   Marqueed         = STATE_SYSTEM_MARQUEED        ,
+		   Animated         = STATE_SYSTEM_ANIMATED        ,
+		   Invisible        = STATE_SYSTEM_INVISIBLE       ,
+		   Offscreen        = STATE_SYSTEM_OFFSCREEN       ,
+		   Sizeable         = STATE_SYSTEM_SIZEABLE        ,
+		   Moveable         = STATE_SYSTEM_MOVEABLE        ,
+		   SelfVoicing      = STATE_SYSTEM_SELFVOICING     ,
+		   Focusable        = STATE_SYSTEM_FOCUSABLE       ,
+		   Selectable       = STATE_SYSTEM_SELECTABLE      ,
+		   Linked           = STATE_SYSTEM_LINKED          ,
+		   Traversed        = STATE_SYSTEM_TRAVERSED       ,
+		   MultiSelectable  = STATE_SYSTEM_MULTISELECTABLE ,
+		   ExtSelectable    = STATE_SYSTEM_EXTSELECTABLE   ,
+		   AlertLow         = STATE_SYSTEM_ALERT_LOW       ,
+		   AlertMedium      = STATE_SYSTEM_ALERT_MEDIUM    ,
+		   AlertHigh        = STATE_SYSTEM_ALERT_HIGH      ,
+		   Protected        = STATE_SYSTEM_PROTECTED       );
+
+#pragma region ImageList
+class ImageList {
+protected:
+	mutable HIMAGELIST hImageList = O;
+	proxy_basetype(ImageList);
+	ImageList(HIMAGELIST h) : hImageList(h) {}
+public:
+	ImageList() {}
+	ImageList(Nu) {}
+public:
+	inline operator bool() const ret_as(hImageList);
+	inline operator HIMAGELIST() const ret_as(hImageList);
+};
+using CImageList = ProxyView<ImageList>;
+#pragma endregion
+
+#pragma region ControlCommon
+enum_flags(ControlCommonStyle , WStyle            ,
+		   Top                = CCS_TOP           ,
+		   NoMoveY            = CCS_NOMOVEY       ,
+		   Bottom             = CCS_BOTTOM        ,
+		   NoResize           = CCS_NORESIZE      ,
+		   NoParentAlign      = CCS_NOPARENTALIGN ,
+		   Adjustable         = CCS_ADJUSTABLE    ,
+		   NoDivider          = CCS_NODIVIDER     ,
+		   Vert               = CCS_VERT          ,
+		   Left               = CCS_LEFT          ,
+		   Right              = CCS_RIGHT         ,
+		   NoMoveX            = CCS_NOMOVEX       );
+using CCStyle = ControlCommonStyle;
+template<class AnyChild>
+class ControlCommon : public WindowBase<AnyChild> {
+public:
+	using Super = WindowBase<AnyChild>;
+protected:
+	SFINAE_Window(AnyChild);
+	use_member(CtlClassName);
+	template<bool IsUnicode, class Style, class StyleEx>
+	using CreateStructX = Super::template CreateStructX<IsUnicode, Style, StyleEx>;
+	template<class Style, class StyleEx>
+	using CreateStruct = Super::template CreateStructX<IsUnicode, Style, StyleEx>;
+	template<class Style, class StyleEx>
+	using CreateStructA = Super::template CreateStructX<false, Style, StyleEx>;
+	template<class Style, class StyleEx>
+	using CreateStructW = Super::template CreateStructX<true, Style, StyleEx>;
+public:
+	ControlCommon() { misuse_assert(!std::is_void_v<AnyChild>, "Base of class ControlCommon cannot be void"); }
+protected:
+	static WindowClass DefClass;
+	static WndProc DefProc;
+	struct xClass : public Super::XClass {
+		xClass() {
+			this->Name(AnyChild::CtlClassName);
+			this->GetInfo();
+			this->Name(AnyChild::CClassName());
+			DefProc = this->lpfnWndProc;
+			this->lpfnWndProc = AnyChild::MainProc;
+		}
+	};
+public:
+	static inline ATOM Register() {
+		static ATOM atom = 0;
+		if (atom) return atom;
+		auto cw = WandX::CreateStruct().Class(AnyChild::CtlClassName).Create();
+		atom = cw->Class().Atom();
+		cw->Destroy();
+		return atom;
+	}
+public:
+	inline auto Create(HWND hParent = O) ret_as(CreateStruct<typename AnyChild::Style, typename AnyChild::StyleEx>(child, hParent));
+	inline auto CreateA(HWND hParent = O) ret_as(CreateStructA<typename AnyChild::Style, typename AnyChild::StyleEx>(child, hParent));
+	inline auto CreateW(HWND hParent = O) ret_as(CreateStructW<typename AnyChild::Style, typename AnyChild::StyleEx>(child, hParent));
+};
+template<class AnyChild>
+WndProc ControlCommon<AnyChild>::DefProc;
+#define BaseOf_CommCtl(name) template<class AnyChild> name : public ControlCommon<Chain<name<AnyChild>, AnyChild>>
+#define SFINAE_CommCtl(name) friend class ControlCommon<name>
+#pragma endregion
+
+#pragma region Control Header
+enum_flags(HeaderStyle      , CCStyle             ,
+		   Horz             = HDS_HORZ            ,
+		   Buttons          = HDS_BUTTONS         ,
+		   HotTrack         = HDS_HOTTRACK        ,
+		   Hidden           = HDS_HIDDEN          ,
+		   DragDrop         = HDS_DRAGDROP        ,
+		   FullDrag         = HDS_FULLDRAG        ,
+		   FilterBar        = HDS_FILTERBAR       ,
+		   Flat             = HDS_FLAT            ,
+		   CheckBoxes       = HDS_CHECKBOXES      ,
+		   NoSizing         = HDS_NOSIZING        ,
+		   Overflow         = HDS_OVERFLOW        );
+enum_flags(HeaderFormat     , int                 ,
+		   Left             = HDF_LEFT            ,
+		   Right            = HDF_RIGHT           ,
+		   Center           = HDF_CENTER          ,
+		   JustifyMask      = HDF_JUSTIFYMASK     ,
+		   RTLReading       = HDF_RTLREADING      ,
+		   Bitmap           = HDF_BITMAP          ,
+		   String           = HDF_STRING          ,
+		   OwnerDraw        = HDF_OWNERDRAW       ,
+		   Image            = HDF_IMAGE           ,
+		   BitmapOnRight    = HDF_BITMAP_ON_RIGHT ,
+		   SortUp           = HDF_SORTUP          ,
+		   SortDown         = HDF_SORTDOWN        ,
+		   CheckBox         = HDF_CHECKBOX        ,
+		   Checked          = HDF_CHECKED         ,
+		   FixedWidth       = HDF_FIXEDWIDTH      ,
+		   SplitButton      = HDF_SPLITBUTTON     );
+enum_class(HeaderFilterType , UINT                ,
+		   String           = HDFT_ISSTRING       ,
+		   Number           = HDFT_ISNUMBER       ,
+		   Date             = HDFT_ISDATE         ,
+		   NoValue          = HDFT_HASNOVALUE     );
+enum_flags(HeaderItemState, UINT,
+	Focussed = HDIS_FOCUSED);
+template<bool IsUnicode>
+class HeaderItemX : public StructShim<structx(HDITEM)> {
+	using_structx(HDITEM);
+	using_structx(HD_TEXTFILTER);
+	using String = StringX<IsUnicode>;
+public:
+	using Super = StructShim<structx(HDITEM)>;
+public:
+	HeaderItemX() ret_to(self->mask = HDI_WIDTH | HDI_HEIGHT |
+		HDI_TEXT | HDI_FORMAT | HDI_LPARAM |
+		HDI_BITMAP | HDI_IMAGE | HDI_ORDER |
+		HDI_FILTER | HDI_STATE)
+	HeaderItemX(Nu) {}
+	HeaderItemX(const HDITEM &hdi) : Super(hdi) {}
+public: // Property - Width
+	/* W */ inline auto&Width(int cx) ret_to_self(self->cxy = cx, self->mask |= HDI_WIDTH);
+proxy_prop_get(Width,cxy,auto);
+public: // Property - Height
+	/* W */ inline auto&Height(int cy) ret_to_self(self->cxy = cy, self->mask |= HDI_HEIGHT);
+proxy_prop_get(Height,cxy,auto);
+public: // Property - Text
+	/* R */ inline const String Text() const ret_as(CString(self->pszText, self->cchTextMax));
+public: // Property - Bitmap
+	/* W */ inline auto &Bitmap(HBITMAP hBitmap) ret_to_self(self->hbm = hBitmap, self->mask |= HDI_BITMAP);
+proxy_prop_get(Bitmap,hbm,CBitmap);
+public: // Property - Format
+	/* W */ inline auto&Format(HeaderFormat fmt) ret_to_self(self->fmt = fmt.yield(), self->mask |= HDI_FORMAT);
+	/* R */ inline auto Format() const ret_as(ref_cast<HeaderFormat>(self->fmt));
+public: // Property - Param
+	/* W */ inline auto &Param(LPARAM lParam) ret_to_self(self->lParam = lParam, self->mask |= HDI_LPARAM);
+proxy_prop_get(Param,lParam,LPARAM);
+public: // Property - Image
+	/* W */ inline auto&Image(int iImage) ret_to_self(self->iImage = iImage, self->mask |= HDI_IMAGE);
+proxy_prop_get(Image,iImage,auto);
+public: // Property - Order
+	/* W */ inline auto&Order(int iOrder) ret_to_self(self->iOrder = iOrder, self->mask |= HDI_ORDER);
+proxy_prop_get(Order,iOrder,auto);
+public: // Property - FilterType
+	/* R */ inline auto FilterType() const ret_as(ref_cast<HeaderFilterType>(self->type));
+public: // Property - Filter
+	//void *pvFilter; // [in] filter data see above
+public: // Property - States
+	/* W */ inline auto&States(HeaderItemState state) ret_to_self(self->state = state.yield(), self->mask |= HDI_STATE);
+	/* R */ inline auto States() const ret_as(ref_cast<HeaderItemState>(self->state));
+};
+using HeaderItem = HeaderItemX<IsUnicode>;
+using HeaderItemA = HeaderItemX<false>;
+using HeaderItemW = HeaderItemX<true>;
+class HeaderIItem {
+	template<class>
+	friend class HeaderBase;
+	CWindow header;
+	int index;
+protected:
+	HeaderIItem(HWND hHeader, int index) : header(hHeader), index(index) {}
+public:
+	inline void Remove() safe_ret_as(header->Send(HDM_DELETEITEM, index));
+public:
+	inline auto &operator=(const HDITEMA &hdi) safe_ret_as_self(header->Send(HDM_SETITEMA, index, (LPARAM)&hdi));
+	inline auto &operator=(const HDITEMW &hdi) safe_ret_as_self(header->Send(HDM_SETITEMW, index, (LPARAM)&hdi));
+};
+BaseOf_CommCtl(class HeaderBase) {
+	SFINAE_CommCtl(HeaderBase);
+public:
+	static constexpr TCHAR CtlClassName[] = WC_HEADER;
+	using Super = ControlCommon<Chain<HeaderBase<AnyChild>, AnyChild>>;
+	using Style = HeaderStyle;
+public:
+	HeaderBase() {}
+public:
+	inline int Insert(const HDITEMA &hdi, int index) ret_as(Super::template Send<int>(HDM_INSERTITEMA, index, (LPARAM)&hdi));
+	inline int Insert(const HDITEMW &hdi, int index) ret_as(Super::template Send<int>(HDM_INSERTITEMW, index, (LPARAM)&hdi));
+	inline void Remove(int index) safe_ret_as(Super::Send(HDM_DELETEITEM, index));
+#pragma region Properties
+public: // Property - Count
+	/* R */ inline int Count() const ret_as(Super::template Send<int>(HDM_GETITEMCOUNT));
+#pragma endregion
+};
+using Header = HeaderBase<void>;
+using CHeader = ProxyView<Header>;
+#pragma endregion
+
+#pragma region Control ToolBar
+enum_flags(ToolBarStyle        , CCStyle                       ,
+		   Buttons             = TBSTYLE_BUTTON                ,
+		   Sep                 = TBSTYLE_SEP                   ,
+		   Check               = TBSTYLE_CHECK                 ,
+		   Group               = TBSTYLE_GROUP                 ,
+		   CheckGroup          = TBSTYLE_CHECKGROUP            ,
+		   DropDown            = TBSTYLE_DROPDOWN              ,
+		   AutoSize            = TBSTYLE_AUTOSIZE              ,
+		   NoPrefix            = TBSTYLE_NOPREFIX              ,
+		   ToolTips            = TBSTYLE_TOOLTIPS              ,
+		   Wrapable            = TBSTYLE_WRAPABLE              ,
+		   AltDrag             = TBSTYLE_ALTDRAG               ,
+		   Flat                = TBSTYLE_FLAT                  ,
+		   List                = TBSTYLE_LIST                  ,
+		   CustomErase         = TBSTYLE_CUSTOMERASE           ,
+		   RegisterDrop        = TBSTYLE_REGISTERDROP          ,
+		   Transparent         = TBSTYLE_TRANSPARENT           );
+enum_flags(ToolBarStyleEx      , WStyleEx                      ,
+		   DrawDDArrows        = TBSTYLE_EX_DRAWDDARROWS       ,
+		   MultiColumn         = TBSTYLE_EX_MULTICOLUMN        ,
+		   Vertical            = TBSTYLE_EX_VERTICAL           ,
+		   MixedButtons        = TBSTYLE_EX_MIXEDBUTTONS       ,
+		   DoubleBuffer        = TBSTYLE_EX_DOUBLEBUFFER       ,
+		   HideClippedButtons  = TBSTYLE_EX_HIDECLIPPEDBUTTONS );
+enum_flags(ToolBarState        , BYTE                          ,
+		   Checked             = TBSTATE_CHECKED               ,
+		   Pressed             = TBSTATE_PRESSED               ,
+		   Enabled             = TBSTATE_ENABLED               ,
+		   Hidden              = TBSTATE_HIDDEN                ,
+		   Indeterminate       = TBSTATE_INDETERMINATE         ,
+		   Wrap                = TBSTATE_WRAP                  ,
+		   Ellipses            = TBSTATE_ELLIPSES              ,
+		   Marked              = TBSTATE_MARKED                );
+enum_flags(ToolBarButtonStyle  , BYTE                          ,
+		   Button              = BTNS_BUTTON                   ,
+		   Sep                 = BTNS_SEP                      ,
+		   Check               = BTNS_CHECK                    ,
+		   Group               = BTNS_GROUP                    ,
+		   CheckGroup          = BTNS_CHECKGROUP               ,
+		   DropDown            = BTNS_DROPDOWN                 ,
+		   AutoSize            = BTNS_AUTOSIZE                 ,
+		   NoPrefix            = BTNS_NOPREFIX                 ,
+		   ShowText            = BTNS_SHOWTEXT                 ,
+		   WholeDropDown       = BTNS_WHOLEDROPDOWN            );
+struct ToolBarButton : public StructShim<TBBUTTON> {
+	using Super = StructShim<TBBUTTON>;
+public:
+	ToolBarButton() {}
+	ToolBarButton(const TBBUTTON &t) : Super(t) {}
+	proxy_prop(BitmapIndex, iBitmap, int, auto);
+	proxy_prop(ID, idCommand, int, auto);
+public: // Property - States
+	proxy_prop_set(States,tbs,ToolBarState);
+	proxy_prop_get(States,fsState,ToolBarState);
+public: // Property - Styles
+	proxy_prop_set(Styles,tbbs,ToolBarButtonStyle);
+	proxy_prop_get(Styles,fsStyle,ToolBarButtonStyle);
+public: // Property - Data
+	template<class AnyType>
+	/* W */ inline auto &Data(AnyType *ptr) ret_to_self(self->dwData = (DWORD_PTR)ptr);
+	template<class AnyType>
+	/* R */ inline AnyType *Data() ret_as(reuse_cast<AnyType *>(self->dwData));
+	template<class AnyType>
+	/* R */ inline const AnyType *Data() const ret_as(reuse_cast<const AnyType *>(self->dwData));
+public: // Property - String
+proxy_prop_set(String, INT_PTR, iString);
+	/* W */ inline auto &String(LPCTSTR lpString) ret_to_self(self->iString = (INT_PTR)lpString);
+proxy_prop_get(StringIndex,iString,INT_PTR);
+	/* R */ inline const WandX::String String() const ret_as(CString((LPCTSTR)self->iString, MaxLenNotice));
+};
+BaseOf_CommCtl(class ToolBarBase) {
+	SFINAE_CommCtl(ToolBarBase);
+public:
+	static constexpr TCHAR CtlClassName[] = TOOLBARCLASSNAME;
+	using Super = ControlCommon<Chain<ToolBarBase<AnyChild>, AnyChild>>;
+	using Style = ToolBarStyle;
+	using StyleEx = ToolBarStyleEx;
+	using Button = ToolBarButton;
+public:
+	ToolBarBase() {}
+};
+using ToolBar = ToolBarBase<void>;
+using CToolBar = ProxyView<ToolBar>;
+#pragma endregion
+
+#pragma region Control ReBar
+enum_flags(ReBarStyle        , CCStyle             ,
+		   ToolTips          = RBS_TOOLTIPS        ,
+		   VarHeight         = RBS_VARHEIGHT       ,
+		   NoBorders         = RBS_BANDBORDERS     ,
+		   FixedOrder        = RBS_FIXEDORDER      ,
+		   RegisterDrop      = RBS_REGISTERDROP    ,
+		   AutoSize          = RBS_AUTOSIZE        ,
+		   VerticalGripper   = RBS_VERTICALGRIPPER ,
+		   DoubleClickToggle = RBS_DBLCLKTOGGLE    );
+#pragma endregion
+
+#pragma region Control ToolTips
+enum_flags(ToolTipStyle     , CCStyle            ,
+		   AlwaysTip        = TTS_ALWAYSTIP      ,
+		   NoPrefix         = TTS_NOPREFIX       ,
+		   NoAnimate        = TTS_NOANIMATE      ,
+		   NoFade           = TTS_NOFADE         ,
+		   Balloon          = TTS_BALLOON        ,
+		   Close            = TTS_CLOSE          ,
+		   UseVisualStyle   = TTS_USEVISUALSTYLE );
+#pragma endregion
+
+#pragma region Control StatusBar
+enum_flags(StatusBarStyle     , WStyle           ,
+		   SizeGripb          = SBARS_SIZEGRIP   ,
+		   ToolTips           = SBARS_TOOLTIPS   );
+enum_flags(StatusBarTextStyle , Int16U,
+		   Default            = 0                ,
+		   OwnerDraw          = SBT_OWNERDRAW    ,
+		   NoBorders          = SBT_NOBORDERS    ,
+		   PopOut             = SBT_POPOUT       ,
+		   RTLReading         = SBT_RTLREADING   ,
+		   NoTabParsing       = SBT_NOTABPARSING );
+template<bool IsUnicode = Native::IsUnicode>
+class StatusBarTextX {
+	using String = StringX<IsUnicode>;
+	String text;
+	StatusBarTextStyle styles;
+public:
+	StatusBarTextX() {}
+	StatusBarTextX(StatusBarTextX &&t) : text(right_cast(t.text)), styles(t.styles) {}
+	StatusBarTextX(String text, StatusBarTextStyle styles = StatusBarTextStyle::Default) : 
+		text(right_cast(text)), styles(styles) {}
+public: // Property - Styles
+	/* W */ inline auto&Styles(StatusBarTextStyle styles) ret_to_self(this->styles = styles);
+	/* R */ inline auto Styles() const ret_as(styles);
+public:
+	inline operator String &() ret_as(text);
+	inline operator const String &() const ret_as(text);
+	inline operator StatusBarTextStyle() ret_as(styles);
+};
+using StatusBarText = StatusBarTextX<>;
+using StatusBarTextA = StatusBarTextX<false>;
+using StatusBarTextW = StatusBarTextX<true>;
+class StatusBarIPart {
+	template<class>
+	friend class StatusBarBase;
+	CWindow bar;
+	Int8U nPart;
+protected:
+	StatusBarIPart(HWND hBar, Int8U nPart) : bar(hBar), nPart(nPart) {}
+#pragma region Properties
+public: // Property - TextLength
+	template<bool IsUnicode = Native::IsUnicode>
+	/* R */ inline Int16U TextLength() const ret_as(LOWORD(bar->Send(IsUnicode ? SB_GETTEXTLENGTHW : SB_GETTEXTLENGTHA, nPart)));
+	/* R */ inline Int16U TextLengthA() const ret_as(LOWORD(bar->Send(SB_GETTEXTLENGTHA, nPart)));
+	/* R */ inline Int16U TextLengthW() const ret_as(LOWORD(bar->Send(SB_GETTEXTLENGTHW, nPart)));
+public: // Property - TextStyle
+	/* R */ inline StatusBarTextStyle TextStyles() const ret_as(reuse_cast<StatusBarTextStyle>(HIWORD(bar->Send(SB_GETTEXTLENGTH, nPart))));
+public: // Property - Text
+	/* W */ inline bool Text(StatusBarTextA text) ret_as(bar->Send(SB_SETTEXTA, MAKEWPARAM(nPart | text.Styles().yield(), 0), (LPCSTR)(const StringA &)text));
+	/* W */ inline bool Text(StatusBarTextW text) ret_as(bar->Send(SB_SETTEXTW, MAKEWPARAM(nPart | text.Styles().yield(), 0), (LPCWSTR)(const StringW &)text));
+	template<bool IsUnicode = Native::IsUnicode>
+	/* R */ inline StatusBarTextX<IsUnicode> Text() const {
+		auto len = TextLength<IsUnicode>();
+		if (len <= 0) return{};
+		StringX<IsUnicode> str((SizeT)len);
+		auto styles = reuse_cast<StatusBarTextStyle>(HIWORD(bar->Send(SB_GETTEXT, nPart, str)));
+		return{ right_cast(str), styles };
+	}
+public: // Property - TipText
+	/* W */ inline auto &TipText(LPCSTR lpText) ret_to_self(bar->Send(SB_SETTIPTEXTA, nPart, lpText));
+	/* W */ inline auto &TipText(LPCWSTR lpText) ret_to_self(bar->Send(SB_SETTIPTEXTW, nPart, lpText));
+public: // Property - Icon
+	/* W */ inline auto &Icon(HICON hIcon) ret_to_self(bar->Send(SB_SETICON, nPart, hIcon));
+	/* R */ inline CIcon Icon() const ret_as(bar->Send<HICON>(SB_GETICON, nPart));
+public: // Property - Rect
+	/* R */ inline WandX::Rect Rect() const safe_ret_to(WandX::Rect rc, bar->Send(SB_GETRECT, nPart, &rc), rc);
+#pragma endregion
+public:
+	inline auto &operator=(String text) ret_to_self(Text(static_cast<String &&>((String &)text)));
+	inline auto &operator=(StatusBarText text) ret_to_self(Text({ static_cast<String &&>((String &)text), text.Styles()}));
+};
+BaseOf_CommCtl(class StatusBarBase) {
+	SFINAE_CommCtl(StatusBarBase);
+public:
+	static constexpr TCHAR CtlClassName[] = STATUSCLASSNAME;
+	using Super = ControlCommon<Chain<StatusBarBase<AnyChild>, AnyChild>>;
+	using Style = StatusBarStyle;
+	using StyleEx = WStyleEx;
+public:
+	StatusBarBase() {}
+public:
+	inline void AutoSize() ret_to(Super::Send(WM_SIZE));
+
+#pragma region Properties
+public: 
+	template<SizeT Len>
+	/* W */ inline auto&SetParts(const int (&Slice)[Len]) safe_ret_as_self(Super::Send(SB_SETPARTS, Len, Slice));
+	/* W */ inline auto&SetParts(const int *pSlices, int Len) safe_ret_as_self(Super::Send(SB_SETPARTS, Len, pSlices));
+	/* W */ inline auto&SetParts(std::initializer_list<int> slices) safe_ret_as_self(Super::Send(SB_SETPARTS, slices.size(), slices.begin()));
+	template<SizeT Len>
+	/* R */ inline bool GetParts(int (&Slice)[Len]) const ret_as(Super::Send(SB_GETPARTS, Len, Slice));
+	/* R */ inline bool GetParts(int *pSlices, int Len) const ret_as(Super::Send(SB_GETPARTS, Len, pSlices));
+public: // Property - Borders
+	/* R */ inline auto Borders() const safe_ret_to(struct { int mx_b0(BorderH, BorderV, GapH); } borders, Super::Send(SB_GETBORDERS, 0, &borders), borders);
+public: // Property - MinHeight
+	/* W */ inline auto&MinHeight(int MinHeight) ret_to_self(Super::Send(SB_SETMINHEIGHT, MinHeight));
+public: // Property - Simple
+	/* W */ inline auto&Simple(bool bSimple) ret_to_self(Super::Send(SB_SIMPLE, bSimple));
+	/* R */ inline bool Simple() const ret_as(Super::Send(SB_SIMPLE));
+public: // Array property - Part
+	/* W */ inline StatusBarIPart Part(Int8U nPart) ret_as({ self, nPart });
+	/* R */ inline const StatusBarIPart Part(Int8U nPart) const ret_as({ self, nPart });
+#pragma endregion
+public:
+	inline StatusBarIPart operator[](Int8U nPart) ret_as({ self, nPart });
+	inline const StatusBarIPart operator[](Int8U nPart) const ret_as({ self, nPart });
+};
+using StatusBar = StatusBarBase<void>;
+using CStatusBar = ProxyView<StatusBar>;
+#pragma endregion
+
+#pragma region Control TrackBar
+enum_flags(TrackBarStyle      , CCStyle              ,
+		   AutoTicks          = TBS_AUTOTICKS        ,
+		   Vert               = TBS_VERT             ,
+		   Horz               = TBS_HORZ             ,
+		   Top                = TBS_TOP              ,
+		   Bottom             = TBS_BOTTOM           ,
+		   Left               = TBS_LEFT             ,
+		   Right              = TBS_RIGHT            ,
+		   Both               = TBS_BOTH             ,
+		   NoTicks            = TBS_NOTICKS          ,
+		   EnableSelRange     = TBS_ENABLESELRANGE   ,
+		   FixedLength        = TBS_FIXEDLENGTH      ,
+		   NoThumb            = TBS_NOTHUMB          ,
+		   ToolTips           = TBS_TOOLTIPS         ,
+		   Reversed           = TBS_REVERSED         ,
+		   DownIsLeft         = TBS_DOWNISLEFT       ,
+		/* NotifyBeforeMove   = TBS_NOTIFYBEFOREMOVE , */
+		   TransparentBkgnd   = TBS_TRANSPARENTBKGND );
+#pragma endregion
+
+#pragma region Control DragList
+#pragma endregion
+
+#pragma region Control UpDown
+enum_flags(UpDownStyle  , CCStyle         ,
+		   Wrap         = UDS_WRAP        ,
+		   SetBuddyInt  = UDS_SETBUDDYINT ,
+		   AlignRight   = UDS_ALIGNRIGHT  ,
+		   AlignLeft    = UDS_ALIGNLEFT   ,
+		   AutoBuddy    = UDS_AUTOBUDDY   ,
+		   ArrowKeys    = UDS_ARROWKEYS   ,
+		   Horz         = UDS_HORZ        ,
+		   NoThousands  = UDS_NOTHOUSANDS ,
+		   HotTrack     = UDS_HOTTRACK    );
+BaseOf_CommCtl(class UpDownBase) {
+	SFINAE_CommCtl(UpDownBase);
+public:
+	static constexpr TCHAR CtlClassName[] = UPDOWN_CLASS;
+	using Super = ControlCommon<Chain<UpDownBase<AnyChild>, AnyChild>>;
+	using Style = UpDownStyle;
+public:
+	UpDownBase() {}
+};
+using UpDown = UpDownBase<void>;
+using CUpDown = ProxyView<UpDown>;
+#pragma endregion
+
+#pragma region Control Progress Bar
+enum_flags(ProgBarStyle   , CCStyle           , 
+		   Smooth         = PBS_SMOOTH        ,
+		   Vertical       = PBS_VERTICAL      ,
+		   Marquee        = PBS_MARQUEE       ,
+		   SmoothReverse  = PBS_SMOOTHREVERSE );
+enum_class(ProgBarState   , DWORD             ,
+		   Normal         = PBST_NORMAL       ,
+		   Error          = PBST_ERROR        ,
+		   Paused         = PBST_PAUSED       );
+BaseOf_CommCtl(class ProgBarBase) {
+	SFINAE_CommCtl(ProgBarBase);
+public:
+	static constexpr TCHAR CtlClassName[] = PROGRESS_CLASS;
+	using Super = ControlCommon<Chain<ProgBarBase<AnyChild>, AnyChild>>;
+	using Style = ProgBarStyle;
+public:
+	ProgBarBase() {}
+public:
+	inline void StepIt() ret_to(Super::Send(PBM_STEPIT));
+	inline auto DeltaPos(int delta) ret_as(Super::template Send<int>(PBM_DELTAPOS, delta));
+	inline void Marquee(bool bStart, UINT dwMilliSec) safe_ret_as(Super::Send(PBM_SETMARQUEE, bStart, dwMilliSec));
+#pragma region Properties
+public: // Property - Step
+	/* W */ inline auto&Step(int step) ret_to_child(Super::Send(PBM_SETSTEP, step));
+	/* R */ inline auto Step() const ret_as(Super::template Send<int>(PBM_GETSTEP));
+public: // Property - Position
+	/* W */ inline auto&Position(int pos) ret_to_child(Super::Send(PBM_SETPOS, pos));
+	/* R */ inline auto Position() const ret_as(Super::template Send<int>(PBM_GETPOS));
+public: // Property - Range
+	/* W */ inline auto &Range(RangeOf<int> r) ret_to_child(PBRANGE rb(r.min, r.max);  Super::Send(PBM_SETRANGE, 0, (LPARAM)&rb));
+	/* R */ inline auto Range() const ret_to(PBRANGE r, Super::Send(PBM_GETRANGE, 0, (LPARAM)&r), RangeOf<int>(r.iLow, r.iHigh));
+public: // Property - State
+	/* W */ inline auto&State(ProgBarState state) ret_to_child(Super::Send(PBM_SETSTATE, state.yield()));
+	/* R */ inline auto State() const ret_as(Super::template Send<ProgBarState>(PBM_GETSTATE));
+public: // Property - BarColor
+	/* W */ inline auto&BarColor(COLORREF clr) ret_to_child(Super::Send(PBM_SETBARCOLOR, 0, clr));
+	/* R */ inline auto BarColor() const ret_as(Super::template Send<RGBColor>(PBM_GETBARCOLOR));
+public: // Property - BkColor
+	/* R */ inline auto BkColor() const ret_as(Super::template Send<RGBColor>(PBM_GETBKCOLOR));
+#pragma endregion
+public:
+	inline auto &operator+=(int n) ret_to_child(DeltaPos(n));
+	inline auto &operator-=(int n) ret_to_child(DeltaPos(-n));
+	inline auto &operator++() ret_to_child(DeltaPos(1));
+	inline auto &operator--() ret_to_child(DeltaPos(-1));
+};
+using ProgBar = ProgBarBase<void>;
+using CProgBar = ProxyView<ProgBar>;
+#pragma endregion
+
+#pragma region Control HotKey
+enum_flags(HotKeyFlag       , BYTE            ,
+		   None             = 0               ,
+		   Shift            = HOTKEYF_SHIFT   ,
+		   Control          = HOTKEYF_CONTROL ,
+		   Alt              = HOTKEYF_ALT     ,
+		   Ext              = HOTKEYF_EXT     );
+enum_flags(HotKeyRule       , WORD            ,
+		   None             = HKCOMB_NONE     ,
+		   Shift            = HKCOMB_S        ,
+		   Control          = HKCOMB_C        ,
+		   Alt              = HKCOMB_A        ,
+		   ShiftControl     = HKCOMB_SC       ,
+		   ShiftAlt         = HKCOMB_SA       ,
+		   ControlAlt       = HKCOMB_CA       ,
+		   ShiftControlAlt  = HKCOMB_SCA      );
+class HotKeyInfo {
+	HotKeyFlag mod;
+	BYTE vk;
+public:
+	HotKeyInfo(WORD LoWord = 0) : mod(reuse_cast<HotKeyFlag>(LOBYTE(LoWord))), vk(HIBYTE(LoWord)) {}
+	HotKeyInfo(WPARAM wParam) : HotKeyInfo(LOWORD(wParam)) {}
+public: // Property - Modifiers
+//	/* W */ inline auto &Modifiers(HotKeyFlag mod) ret_to_self(this->mod = mod.yield());
+	/* R */ inline HotKeyFlag Modifiers() const ret_as(this->mod);
+public: // Property - VirtualKey
+	/* W */ inline auto&VirtualKey(BYTE vk) ret_to_self(this->vk = vk);
+	/* R */ inline BYTE VirtualKey() const ret_as(this->vk);
+public:
+	inline operator WPARAM() const ret_as(MAKEWPARAM(MAKEWORD(mod.yield(), vk), 0));
+};
+BaseOf_CommCtl(class HotKeyBase) {
+	SFINAE_CommCtl(HotKeyBase);
+public:
+	static constexpr TCHAR CtlClassName[] = HOTKEY_CLASS;
+	using Super = ControlCommon<Chain<HotKeyBase<AnyChild >, AnyChild >>;
+	using Info = HotKeyInfo;
+	using Rule = HotKeyRule;
+public:
+	HotKeyBase() {}
+public:
+#pragma region Properties
+public: // Property - HotKey
+	/* W */ inline auto&HotKey(Info inf) ret_to_self(Super::Send(HKM_SETHOTKEY, inf));
+	/* R */ inline Info HotKey() const ret_as(Super::Send(HKM_GETHOTKEY));
+public: // Property - Rules
+	/* W */ inline auto &Rules(Rule rules) ret_to_self(Super::Send(HKM_SETRULES, rules.yield()));
+#pragma endregion
+};
+using HotKey = HotKeyBase<void>;
+using CHotKey = ProxyView<HotKey>;
+#pragma endregion
+
+#pragma region Control SysLink
+enum_flags(SysLinkStyle    , CCStyle            ,
+		   Transparent     = LWS_TRANSPARENT    ,
+		   IgnoreReturn    = LWS_IGNORERETURN   ,
+		   NoPrefix        = LWS_NOPREFIX       ,
+		   UseVisualStyle  = LWS_USEVISUALSTYLE ,
+		   UseCustomText   = LWS_USECUSTOMTEXT  ,
+		   Right           = LWS_RIGHT          );
+//BaseOf_CommCtl(class SysLinkBase) {
+//	SFINAE_CommCtl(SysLinkBase);
+//public:
+//	static constexpr TCHAR CtlClassName[] = WC_LINK;
+//	using Super = ControlCommon<Chain<SysLinkBase<AnyChild>, AnyChild>>;
+//	using Style = SysLinkStyle;
+//public:
+//	SysLinkBase() {}
+//public:
+//
+//};
+#pragma endregion
+
+#pragma region Control ListView
+enum_flags(ListViewStyle    , CCStyle             ,
+		   Icon             = LVS_ICON            ,
+		   Report           = LVS_REPORT          ,
+		   SmallIcon        = LVS_SMALLICON       ,
+		   List             = LVS_LIST            ,
+		   TypeMask         = LVS_TYPEMASK        ,
+		   SingleSel        = LVS_SINGLESEL       ,
+		   ShowSelAlways    = LVS_SHOWSELALWAYS   ,
+		   SortAscending    = LVS_SORTASCENDING   ,
+		   SortDescending   = LVS_SORTDESCENDING  ,
+		   ShareImageLists  = LVS_SHAREIMAGELISTS ,
+		   NoLabelWrap      = LVS_NOLABELWRAP     ,
+		   AutoArrange      = LVS_AUTOARRANGE     ,
+		   EditLabels       = LVS_EDITLABELS      ,
+		   OwnerData        = LVS_OWNERDATA       ,
+		   NoScroll         = LVS_NOSCROLL        ,
+		   AlignTop         = LVS_ALIGNTOP        ,
+		   AlignLeft        = LVS_ALIGNLEFT       ,
+		   AlignMask        = LVS_ALIGNMASK       ,
+		   OwnerDrawFixed   = LVS_OWNERDRAWFIXED  ,
+		   NoColumnHeader   = LVS_NOCOLUMNHEADER  ,
+		   NoSortHeader     = LVS_NOSORTHEADER    );
+template<bool IsUnicode>
+class ListViewIndex : public StructShim<LVFINDINFO> {
+	using_structx(LVFINDINFO);
+	using String = StringX<IsUnicode>;
+public:
+	using Super = StructShim<LVFINDINFO>;
+public:
+};
+template<bool IsUnicode>
+class ListViewItemX : public StructShim<structx(LVITEM)> {
+	using_structx(LVITEM);
+	using String = StringX<IsUnicode>;
+public:
+	using Super = StructShim<LVITEM>;
+public:
+	ListViewItemX() {}
+	ListViewItemX(const LVITEM &l) : Super(l) {}
+};
+using ListViewItem = ListViewItemX<IsUnicode>;
+using ListViewItemA = ListViewItemX<false>;
+using ListViewItemW = ListViewItemX<true>;
+template<bool IsUnicode>
+class ListViewColumnX : public StructShim<structx(LVCOLUMN)> {
+	using_structx(LVCOLUMN);
+	using String = StringX<IsUnicode>;
+public:
+	using Super = StructShim<LVCOLUMN>;
+public:
+	ListViewColumnX() {}
+	ListViewColumnX(const LVCOLUMN &l) : Super(l) {}
+};
+using ListViewColumn = ListViewColumnX<IsUnicode>;
+using ListViewColumnA = ListViewColumnX<false>;
+using ListViewColumnW = ListViewColumnX<true>;
+BaseOf_CommCtl(class ListViewBase) {
+	SFINAE_CommCtl(ListViewBase);
+public:
+	static constexpr TCHAR CtlClassName[] = WC_LISTVIEW;
+	using Super = ControlCommon<Chain<ListViewBase<AnyChild>, AnyChild>>;
+	using Style = ListViewStyle;
+public:
+	ListViewBase() {}
+public:
+	//inline void InsertItem(const ListViewItem &lvi) safe_ret_as(ListView_InsertItem(self, &lvi));
+	//inline void DeleteItem(int i) safe_ret_as(ListView_DeleteItem(self, i));
+	//inline void DeleteAllItem()  safe_ret_as(ListView_DeleteAllItems(self));
+
+#pragma region Properties
+public: 
+//	/* W */ inline bool UnicodeFormat() const ret_as(ListView_GetUnicodeFormat(self));
+//	/* R */ inline auto &UnicodeFormat(bool bUnicode) safe_ret_as_self(ListView_SetUnicodeFormat(self, bUnicode));
+//public: 
+//	/* W */ inline auto &BkColor(DWORD rgb) safe_ret_as_self(ListView_SetBkColor(self, rgb));
+//	/* R */ inline bool BkColor() const ret_as(ListView_GetBkColor(self));
+//public: 
+//public: 
+//	/* R */ inline auto ItemCount() const ret_as(ListView_GetItemCount(self));
+//public: 
+//	/* W */ inline auto &Item(const ListViewItem &lvi) safe_ret_as_self(ListView_SetItem(self, &lvi));
+//	/* R */ inline auto Item() const safe_ret_to(ListViewItem lvi, ListView_GetItem(self, &lvi), lvi);
+#pragma endregion
+};
+using ListView = ListViewBase<void>;
+using CListView = ProxyView<ListView>;
+#pragma endregion
+
+#pragma region Control TreeView
+enum_flags(TreeViewStyle        , CCStyle                    ,
+		   HasButtons           = TVS_HASBUTTONS             ,
+		   HasLines             = TVS_HASLINES               ,
+		   LinesAtRoot          = TVS_LINESATROOT            ,
+		   EditLabels           = TVS_EDITLABELS             ,
+		   DisabledDragDrop     = TVS_DISABLEDRAGDROP        ,
+		   ShowSelAlways        = TVS_SHOWSELALWAYS          ,
+		   RTLReading           = TVS_RTLREADING             ,
+		   NoToolTips           = TVS_NOTOOLTIPS             ,
+		   CheckBoxes           = TVS_CHECKBOXES             ,
+		   TrackSelect          = TVS_TRACKSELECT            ,
+		   SingleExpand         = TVS_SINGLEEXPAND           ,
+		   InfoTip              = TVS_INFOTIP                ,
+		   FullRowSelect        = TVS_FULLROWSELECT          ,
+		   NoScroll             = TVS_NOSCROLL               ,
+		   NoEvenHeight         = TVS_NONEVENHEIGHT          ,
+		   NoHScroll            = TVS_NOHSCROLL              );
+enum_flags(TreeViewStyleEx      , WStyleEx                   ,
+		   NoSingleCollapse     = TVS_EX_NOSINGLECOLLAPSE    ,
+		   MultiSelect          = TVS_EX_MULTISELECT         ,
+		   DoubleBuffer         = TVS_EX_DOUBLEBUFFER        ,
+		   NoIndentState        = TVS_EX_NOINDENTSTATE       ,
+		   RichToolTip          = TVS_EX_RICHTOOLTIP         ,
+		   AutoHScroll          = TVS_EX_AUTOHSCROLL         ,
+		   FadeInOutExpandos    = TVS_EX_FADEINOUTEXPANDOS   ,
+		   PartialCheckBoxes    = TVS_EX_PARTIALCHECKBOXES   ,
+		   ExclusionCheckBoxes  = TVS_EX_EXCLUSIONCHECKBOXES ,
+		   DimmedCheckBoxes     = TVS_EX_DIMMEDCHECKBOXES    ,
+		   DrawImageAsync       = TVS_EX_DRAWIMAGEASYNC      );
+BaseOf_CommCtl(class TreeViewBase) {
+	SFINAE_CommCtl(TreeViewBase);
+public:
+	static constexpr TCHAR CtlClassName[] = WC_TREEVIEW;
+	using Super = ControlCommon<Chain<TreeViewBase<AnyChild>, AnyChild>>;
+	using Style = TreeViewStyle;
+	using StyleEx = TreeViewStyleEx;
+public:
+	TreeViewBase() {}
+};
+using TreeView = TreeViewBase<void>;
+using CTreeView = ProxyView<TreeView>;
+#pragma endregion
+
+#pragma region Control Tab Control
+enum_flags(TabControlStyle     , CCStyle               ,
+		   ScrollOpposite      = TCS_SCROLLOPPOSITE    ,
+		   Bottom              = TCS_BOTTOM            ,
+		   Right               = TCS_RIGHT             ,
+		   MultiSelect         = TCS_MULTISELECT       ,
+		   FlatButtons         = TCS_FLATBUTTONS       ,
+		   ForceIconLeft       = TCS_FORCEICONLEFT     ,
+		   ForceLabelLeft      = TCS_FORCELABELLEFT    ,
+		   HotTrack            = TCS_HOTTRACK          ,
+		   Vertical            = TCS_VERTICAL          ,
+		   Tabs                = TCS_TABS              ,
+		   Buttons             = TCS_BUTTONS           ,
+		   SingleLine          = TCS_SINGLELINE        ,
+		   MultiLine           = TCS_MULTILINE         ,
+		   RightJustify        = TCS_RIGHTJUSTIFY      ,
+		   FixedWidth          = TCS_FIXEDWIDTH        ,
+		   RaggedRight         = TCS_RAGGEDRIGHT       ,
+		   FocusOnButtonDown   = TCS_FOCUSONBUTTONDOWN ,
+		   OwnerDrawFixed      = TCS_OWNERDRAWFIXED    ,
+		   ToolTips            = TCS_TOOLTIPS          ,
+		   FocusNever          = TCS_FOCUSNEVER        );
+BaseOf_CommCtl(class TabControlBase) {
+	SFINAE_CommCtl(TabControlBase);
+public:
+	static constexpr TCHAR CtlClassName[] = WC_TABCONTROL;
+	using Super = ControlCommon<Chain<TabControlBase<AnyChild>, AnyChild>>;
+	using Style = TabControlStyle;
+public:
+	TabControlBase() {}
+};
+using TabControl = TabControlBase<void>;
+using CTabControl = ProxyView<TabControl>;
+#pragma endregion
+
+#pragma region Control Animate
+enum_flags(AnimateStyle, CCStyle,
+		   Center              = ACS_CENTER,
+		   Transparent         = ACS_TRANSPARENT,
+		   AutoPlay            = ACS_AUTOPLAY,
+		   Timer               = ACS_TIMER);
+BaseOf_CommCtl(class AnimateBase) {
+	SFINAE_CommCtl(AnimateBase);
+public:
+	static constexpr TCHAR CtlClassName[] = ANIMATE_CLASS;
+	using Super = ControlCommon<Chain<AnimateBase<AnyChild>, AnyChild>>;
+	using Style = AnimateStyle;
+public:
+	AnimateBase() {}
+public:
+	inline bool Open(LPCSTR lpszAVIPath, HINSTANCE hInst = O) ret_as(Super::Send(ACM_OPENA, hInst, lpszAVIPath));
+	inline bool Open(LPCWSTR lpszAVIPath, HINSTANCE hInst = O) ret_as(Super::Send(ACM_OPENW, hInst, lpszAVIPath));
+	inline bool Open(WORD resid, HINSTANCE hInst = O) ret_as(Super::Send(ACM_OPEN, hInst, MAKEINTRESOURCE(resid)));
+	inline bool Play(UINT rept = (UINT)-1, SHORT start = -1, SHORT end = -1) ret_as(Super::Send(ACM_PLAY, rept, MAKEWPARAM(start, end)));
+	inline bool Stop() ret_as(Super::Send(ACM_STOP));
+	inline bool IsPlaying() const ret_as(Super::Send(ACM_ISPLAYING));
+};
+using Animate = AnimateBase<void>;
+using CAnimate = ProxyView<Animate>;
+#pragma endregion
+
+#pragma region Control Calendar
+enum_flags(CalendarStyle     , CCStyle              ,
+		   DayState          = MCS_DAYSTATE         ,
+		   MultiSelect       = MCS_MULTISELECT      ,
+		   WeekNumbers       = MCS_WEEKNUMBERS      ,
+		   NoTodayCircle     = MCS_NOTODAYCIRCLE    ,
+		   NoToday           = MCS_NOTODAY          ,
+		   NoTrailingDates   = MCS_NOTRAILINGDATES  ,
+		   ShortDaysOfWeek   = MCS_SHORTDAYSOFWEEK  ,
+		   NoSelChangeOnNav  = MCS_NOSELCHANGEONNAV );
+enum_class(CalendarView      , UINT         ,
+		   Month             = MCMV_MONTH   ,
+		   Year              = MCMV_YEAR    ,
+		   Decade            = MCMV_DECADE  ,
+		   Century           = MCMV_CENTURY );
+enum_class(CalendarID        , UINT,
+		   Gregorian               = CAL_GREGORIAN              ,
+		   Gregorian_US            = CAL_GREGORIAN_US           ,
+		   Japan                   = CAL_JAPAN                  ,
+		   Taiwan                  = CAL_TAIWAN                 ,
+		   Korea                   = CAL_KOREA                  ,
+		   Hijri                   = CAL_HIJRI                  ,
+		   Thai                    = CAL_THAI                   ,
+		   Hebrew                  = CAL_HEBREW                 ,
+		   Gregorian_ME_French     = CAL_GREGORIAN_ME_FRENCH    ,
+		   Gregorian_Arabic        = CAL_GREGORIAN_ARABIC       ,
+		   Gregorian_XLit_English  = CAL_GREGORIAN_XLIT_ENGLISH ,
+		   Gregorian_XLit_French   = CAL_GREGORIAN_XLIT_FRENCH  ,
+		/* Persian                 = CAL_PERSIAN                , */
+		   UmAlQura                = CAL_UMALQURA               );
+struct CalendarGridInfo : public StructShim<MCGRIDINFO> {
+	using Super = StructShim<MCGRIDINFO>;
+public:
+	CalendarGridInfo() ret_to(self->cbSize = sizeof(MCGRIDINFO));
+	CalendarGridInfo(Nu) {}
+	CalendarGridInfo(const MCGRIDINFO &mg) : Super(mg) {}
+
+	//DWORD dwPart;
+	//DWORD dwFlags;
+	//int iCalendar;
+	//int iRow;
+	//int iCol;
+	proxy_prop(Selected, bSelected, BOOL, bool);
+public: // Property - Start
+	/* W */ inline auto&Start(const SYSTEMTIME &stStart) ret_to_self(self->stStart = stStart);
+proxy_prop_get(Start,stStart,SysTime);
+public: // Property - End
+	/* W */ inline auto&End(const SYSTEMTIME &stEnd) ret_to_self(self->stEnd = stEnd);
+proxy_prop_get(End,stEnd,SysTime);
+public: // Property - Range
+	/* W */ inline auto&Range(RangeOf<SYSTEMTIME> r) ret_to_self(self->stStart = r.min, self->stEnd = r.max);
+	/* R */ inline RangeOf<SysTime> Range() const ret_as(RangeOf<SysTime>(self->stStart, self->stEnd));
+public: // Property - Rect
+	/* W */ inline auto&Rect(const RECT &rc) ret_to_self(self->rc = rc);
+proxy_prop_get(Rect,rc,WandX::Rect);
+	//PWSTR pszName;
+	//SizeT cchName;
+};
+BaseOf_CommCtl(class CalendarBase) {
+	SFINAE_CommCtl(CalendarBase);
+public:
+	static constexpr TCHAR CtlClassName[] = MONTHCAL_CLASS;
+	using Super = ControlCommon<Chain<CalendarBase<AnyChild>, AnyChild>>;
+	using Style = CalendarStyle;
+public:
+	CalendarBase() {}
+public:
+#pragma region Properties
+public: // Property - CurSel
+	/* W */	inline auto&CurSel(const SYSTEMTIME &s) safe_ret_as_child(Super::Send(MCM_SETCURSEL, 0, &s));
+	/* R */ inline auto CurSel() const safe_ret_to(SysTime s = O, Super::Send(MCM_GETCURSEL, 0, &s), s);
+public: // Property - MaxSelCount
+	/* W */ inline auto&MaxSelCount(int count) safe_ret_as_child(Super::Send(MCM_SETMAXSELCOUNT, count));
+	/* R */	inline auto MaxSelCount() const ret_as(Super::template Send<int>(MCM_GETMAXSELCOUNT));
+public: // Property - SelRange
+//	/* W */ inline auto&SelRange(RangeOf<SYSTEMTIME> r) safe_ret_to_child(SYSTEMTIME s[2]{ mx_b0(r.min, r.max) }, Super::Send(MCM_SETSELRANGE, 0, s));
+	/* R */ inline auto SelRange() const safe_ret_to(SYSTEMTIME s[2], Super::Send(MCM_GETSELRANGE, 0, s), RangeOf<SysTime>(s[0], s[1]));
+public: // Property - Today
+	/* W */ inline auto&Today(const SYSTEMTIME &s) ret_to_child(Super::Send(MCM_SETTODAY, 0, &s));
+	/* W */ inline auto Today() const safe_ret_to(SysTime s = O, Super::Send(MCM_GETTODAY, 0, &s), s);
+public: // Property - FirstDayOfWeek
+	/* W */ inline auto&FirstDayOfWeek(int day) safe_ret_as_child(Super::Send(MCM_SETFIRSTDAYOFWEEK, 0, day));
+	/* R */ inline auto FirstDayOfWeek() const ret_as(Super::template Send<int>(MCM_GETFIRSTDAYOFWEEK));
+public: // Property - CalendarID
+	/* W */ inline auto &CalendarID(WandX::CalendarID id) safe_ret_as_child(Super::Send(MCM_SETCALID, 0, id.yield()));
+	/* R */ inline auto CalendarID() const ret_as(Super::template Send<WandX::CalendarID>(MCM_GETCALID));
+public: // Property - MonthDelta
+	/* W */ inline auto&MonthDelta(int delta) safe_ret_as_child(Super::Send(MCM_SETMONTHDELTA, delta));
+	/* R */ inline auto MonthDelta() const ret_as(Super::template Send<int>(MCM_GETMONTHDELTA));
+public: // Property - CurrentView
+	/* W */ inline auto&CurrentView(CalendarView view) safe_ret_as_child(Super::Send(8, 0, view.yield()));
+	/* R */ inline auto CurrentView() const ret_as(Super::template Send<CalendarView>(MCM_GETCURRENTVIEW));
+public: // Property - Count
+	/* R */ inline auto Count() const ret_as(Super::template Send<int>(MCM_GETCALENDARCOUNT));
+public: // Property - Border
+	/* W */ inline auto&Border(int border) safe_ret_as_child(Super::Send(MCM_SETCALENDARBORDER, border >= 0, border));
+	/* R */ inline auto Border() const ret_as(Super::template Send<int>(MCM_GETCALENDARBORDER));
+public: // Property - MaxTodayWidth
+	/* R */ inline auto MaxTodayWidth() const ret_as(Super::template Send<int>(MCM_GETMAXTODAYWIDTH));
+public: // Property - MinReqRect
+	/* R */ inline auto MinReqRect() const safe_ret_to(WandX::Rect rc, Super::Send(MCM_GETMINREQRECT, 0, &rc), rc);
+#pragma endregion
+};
+using Calendar = CalendarBase<void>;
+using CCalendar = ProxyView<Calendar>;
+#pragma endregion
+
+#pragma region Control DateTimePick
+enum_flags(DateTimePickStyle      , CCStyle                    ,
+		   UpDown                 = DTS_UPDOWN                 ,
+		   ShowNone               = DTS_SHOWNONE               ,
+		   ShortDateFormat        = DTS_SHORTDATEFORMAT        ,
+		   LongDateFormat         = DTS_LONGDATEFORMAT         ,
+		   ShortDateCenturyFormat = DTS_SHORTDATECENTURYFORMAT ,
+		   TimeFormat             = DTS_TIMEFORMAT             ,
+		   AppCanParse            = DTS_APPCANPARSE            ,
+		   RightAlign             = DTS_RIGHTALIGN             );
+enum_class(DateTimePickFlags      , DWORD     ,
+		   Error                  = GDT_ERROR ,
+		   Valid                  = GDT_VALID ,
+		   None                   = GDT_NONE  );
+struct DateTimePickInfo : public StructShim<DATETIMEPICKERINFO> {
+	using Super = StructShim<DATETIMEPICKERINFO>;
+public:
+	DateTimePickInfo() ret_to(self->cbSize = sizeof(DATETIMEPICKERINFO));
+	DateTimePickInfo(const DATETIMEPICKERINFO &dtpi) : Super(dtpi) {}
+	proxy_prop_sync(CheckRect,rcCheck,WandX::Rect);
+public: // Property - CheckState
+	proxy_prop_set(CheckState,state,SystemState);
+	proxy_prop_get(CheckState,stateCheck,SystemState);
+	proxy_prop_sync(ButtonRect,rcButton,WandX::Rect);
+public: // Property - ButtonState
+	proxy_prop_set(ButtonState,state,SystemState);
+	proxy_prop_get(ButtonState,stateButton,SystemState);
+//public: // Property - Edit
+//	/* W */ inline auto &Edit(HWND hEdit) ret_to_self(self->hwndEdit = hEdit);
+//	/* R */ inline CEdit Edit() const ret_as(self->hwndEdit);
+//public: // Property - UpDown
+//	/* W */ inline auto &UpDown(HWND hUpDown) ret_to_self(self->hwndUD = hUpDown);
+//	/* R */ inline CUpDown UpDown() const ret_as(self->hwndUD);
+//public: // Property - DropDown
+//	/* W */ inline auto &DropDown(HWND hDropDown) ret_to_self(self->hwndDropDown = hDropDown);
+//	/* R */ inline CComboBox DropDown() const ret_as(self->hwndDropDown);
+};
+BaseOf_CommCtl(class DateTimePickBase) {
+	SFINAE_CommCtl(DateTimePickBase);
+public:
+	static constexpr TCHAR CtlClassName[] = DATETIMEPICK_CLASS;
+	using Super = ControlCommon<Chain<DateTimePickBase<AnyChild>, AnyChild>>;
+	using Style = DateTimePickStyle;
+	using Flags = DateTimePickFlags;
+	using Info = DateTimePickInfo;
+public:
+	DateTimePickBase() {}
+public:
+#pragma region Properties
+public: // Property - SystemTime
+	/* W */ inline auto&SystemTime(const SYSTEMTIME &st) safe_ret_as_self(Super::Send(DTM_GETSYSTEMTIME, &st));
+	/* R */ inline auto SystemTime() const safe_ret_to(SysTime st = O, Super::Send(self, DTM_SETSYSTEMTIME, &st), st);
+//public: // Property - Range
+//	/* W */ inline auto &Range(const SYSTEMTIME &st) safe_ret_as_self(DateTime_SetRange(self, GD_DEFAULT, &st));
+//	/* R */ inline auto  Range() const safe_ret_to(SysTime st, DateTime_GetRange(self, &st), st);
+//public: // Property - Format
+//public: // Property - CalendarColor
+//	/* W */ inline auto &CalendarColor(int iColor, COLORREF clr) safe_ret_as_self(DateTime_SetCalendarColor(self, iColor, clr));
+//	/* R */ inline auto  CalendarColor(int iColor) const safe_ret_as(DateTime_GetCalendarColor(self, iColor));
+//public: // Property - Calendar
+//	/* R */ 
+//public: // 
+#pragma endregion
+
+};
+using DateTimePick = DateTimePickBase<void>;
+using CDateTimePick = ProxyView<DateTimePick>;
+#pragma endregion
+
+#pragma region Control Pager
+enum_flags(PagerStyle , CCStyle        ,
+		   Vert       = PGS_VERT       ,
+		   Horz       = PGS_HORZ       ,
+		   AutoScroll = PGS_AUTOSCROLL ,
+		   DragNDrop  = PGS_DRAGNDROP  );
+#pragma endregion
+
+#pragma region Control NativeFont
+enum_flags(NativeFontStyle , CCStyle          ,
+		   Edit            = NFS_EDIT         ,
+		   Static          = NFS_STATIC       ,
+		   ListCombo       = NFS_LISTCOMBO    ,
+		   Button          = NFS_BUTTON       ,
+		   All             = NFS_ALL          ,
+		   UseFontAssoc    = NFS_USEFONTASSOC );
+#pragma endregion
+
+#pragma region Control Button
+enum_flags(ButtonStyle      , CCStyle            ,
+		   PushButton       = BS_PUSHBUTTON      ,
+		   DefPushButton    = BS_DEFPUSHBUTTON   ,
+		   CheckBox         = BS_CHECKBOX        ,
+		   AutoCheckBox     = BS_AUTOCHECKBOX    ,
+		   RadioButton      = BS_RADIOBUTTON     ,
+		   State3           = BS_3STATE          ,
+		   AutoState3       = BS_AUTO3STATE      ,
+		   GroupBox         = BS_GROUPBOX        ,
+		   UserButton       = BS_USERBUTTON      ,
+		   AutoRadioButton  = BS_AUTORADIOBUTTON ,
+		   PushBox          = BS_PUSHBOX         ,
+		   OwnerDraw        = BS_OWNERDRAW       ,
+		   TypeMask         = BS_TYPEMASK        ,
+		   LeftText         = BS_LEFTTEXT        ,
+		   Text             = BS_TEXT            ,
+		   Icon             = BS_ICON            ,
+		   Bitmap           = BS_BITMAP          ,
+		   Left             = BS_LEFT            ,
+		   Right            = BS_RIGHT           ,
+		   Center           = BS_CENTER          ,
+		   Top              = BS_TOP             ,
+		   Bottom           = BS_BOTTOM          ,
+		   VCenter          = BS_VCENTER         ,
+		   PushLike         = BS_PUSHLIKE        ,
+		   MultiLine        = BS_MULTILINE       ,
+		   Notify           = BS_NOTIFY          ,
+		   Flat             = BS_FLAT            );
+enum_flags(ButtonState      , SHORT              ,
+		   Unchecked        = BST_UNCHECKED      ,
+		   Checked          = BST_CHECKED        ,
+		   Indeterminate    = BST_INDETERMINATE  ,
+		   Pushed           = BST_PUSHED         ,
+		   Focus            = BST_FOCUS          );
+enum_flags(ButtonSplitStyle , UINT               ,
+		   NoSplit          = BCSS_NOSPLIT       ,
+		   Stretch          = BCSS_STRETCH       ,
+		   AlignLeft        = BCSS_ALIGNLEFT     ,
+		   Image            = BCSS_IMAGE         );
+struct ButtonSplitInfo : public StructShim<BUTTON_SPLITINFO> {
+	using Super = StructShim<BUTTON_SPLITINFO>;
+public:
+	ButtonSplitInfo() ret_to(self->mask = BCSIF_GLYPH | BCSIF_IMAGE | BCSIF_STYLE | BCSIF_SIZE);
+	ButtonSplitInfo(Nu) {}
+	ButtonSplitInfo(const BUTTON_SPLITINFO &bs) : Super(bs) {}
+public: // Property - Styles
+	proxy_prop_set(Styles,style,ButtonSplitStyle);
+	proxy_prop_get(Styles,uSplitStyle,ButtonSplitStyle);
+public: // Property - Size
+proxy_prop_set(Size, WandX::Size, size);
+	proxy_prop_get(Size,size,WandX::Size);
+	proxy_prop(Glyph, himlGlyph, HIMAGELIST, CImageList);
+};
+struct ButtonImageList : public StructShim<BUTTON_IMAGELIST> {
+	using Super = StructShim<BUTTON_IMAGELIST>;
+public:
+	ButtonImageList() {}
+	ButtonImageList(const BUTTON_IMAGELIST &b) : Super(b) {}
+public: 
+proxy_prop_sync(Margin,margin,WandX::Rect);
+public: 
+	//enum_class(Aligns, UINT, 
+	//	Left     = BUTTON_IMAGELIST_ALIGN_LEFT,
+	//	Right    = BUTTON_IMAGELIST_ALIGN_RIGHT,
+	//	Top      = BUTTON_IMAGELIST_ALIGN_TOP,
+	//	Bottom   = BUTTON_IMAGELIST_ALIGN_BOTTOM,
+	//	Center   = BUTTON_IMAGELIST_ALIGN_CENTER);
+	//proxy_prop_set(Align,align,Aligns);
+	///* R */ inline Aligns  Align() const ret_as(ref_cast<Aligns>(self->uAlign));
+};
+BaseOf_CommCtl(class ButtonBase) {
+	SFINAE_CommCtl(ButtonBase);
+public:
+	static constexpr TCHAR CtlClassName[] = WC_BUTTON;
+	using Child = Chain<ButtonBase<AnyChild>, AnyChild>;
+	using Super = ControlCommon<Child>;
+	using Style = ButtonStyle;
+	using State = ButtonState;
+public:
+	ButtonBase() {}
+public:
+	void Click() const ret_to(Super::Send(BM_CLICK));
+
+#pragma region Properties
+public: // Property - IdealSize
+	/* R */ inline WandX::Size IdealSize() const ret_to(WandX::Size sz, Super::Send(BCM_GETIDEALSIZE, 0, &sz), sz);
+public: // Property - NoteLength
+	/* R */ inline auto NoteLength() const ret_as(Super::template Send<int>(BCM_GETNOTELENGTH));
+public: // Property - Note
+	/* W */ inline auto &Note(LPCTSTR lpszNote) ret_to(Super::Send(BCM_SETNOTE, 0, lpszNote));
+	/* R */ inline String Note() const {
+		auto len = NoteLength();
+		if (len <= 0) return O;
+		String str(len);
+		Super::Send(BCM_GETNOTE, len + 1, (LPCTSTR)str);
+		return right_cast(str);
+	}
+public: // Property - TextMargin
+	/* W */ inline auto &TextMargin(RECT margin) ret_to_child(Super::Send(BCM_SETTEXTMARGIN, 0, &margin));
+	/* R */ inline WandX::Rect TextMargin() const ret_to(WandX::Rect margin, Super::Send(BCM_GETTEXTMARGIN, 0, &margin), margin);
+public: // Property - SplitInfo
+	/* W */ inline auto&SplitInfo(const BUTTON_SPLITINFO &bsi) ret_to_child(Super::Send(BCM_SETSPLITINFO, 0, &bsi));
+	/* R */ inline auto SplitInfo() const ret_to(ButtonSplitInfo bsi, Super::Send(BCM_GETSPLITINFO, 0, &bsi), bsi);
+public: // Property - Shield
+	/* W */ inline auto &Shield(bool bShield) ret_to_self(Super::Send(BCM_SETSHIELD, 0, bShield));
+public: // Property - DropdownState
+	/* W */ inline auto &DropdownState(bool bDropped) ret_to_self(Super::Send(BCM_SETDROPDOWNSTATE, bDropped));
+public: // Property - Icon
+	/* W */ inline auto &Icon(HICON hIcon) ret_to_child(Super::Send(BM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon));
+	/* R */ inline CIcon Icon() const ret_as((HICON)Super::Send(BM_GETIMAGE, IMAGE_ICON));
+public: // Property - Bitmap
+	/* W */ inline auto &Bitmap(HBITMAP hBitmap) ret_to_child(Super::Send(BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap));
+	/* R */ inline CBitmap Bitmap() const ret_as((HBITMAP)Super::Send(BM_GETIMAGE, IMAGE_BITMAP));
+public: // Property - ImageList
+	/* W */ inline auto &ImageList(const BUTTON_IMAGELIST &iml) ret_to_child(Super::Send(BCM_SETIMAGELIST, 0, &iml));
+	/* R */ inline auto ImageList() const safe_ret_to(ButtonImageList iml, Super::Send(BCM_GETTEXTMARGIN, 0, &iml), iml);
+public: // Property - CheckStates
+	/* W */ inline auto &CheckStates(State s) ret_to_self(Super::Send(BM_SETCHECK, s.yield()));
+	/* R */ inline State CheckStates() const ret_as(Super::template Send<State>(BM_GETCHECK));
+public:  // Property - States
+	/* W */ inline auto &States(State s) ret_to_self(Super::Send(BM_SETSTATE, s.yield()));
+	/* R */ inline State States() const ret_as(Super::template Send<State>(BM_GETSTATE));
+public: // Property - Styles
+	/* W */ inline auto &Styles(Style style, bool bRedraw = true) ret_to_self(Super::Send(BM_SETSTYLE, style.yield(), bRedraw));
+public: // Property - DontClick
+	/* W */ inline auto &DontClick(bool bDontClick) ret_to_self(Super::Send(BM_SETDONTCLICK, bDontClick));
+#pragma endregion
+};
+using Button = ButtonBase<void>;
+using CButton = ProxyView<Button>;
+#pragma endregion
+
+#pragma region Control Static
+enum_flags(StaticStyle     , CCStyle            ,
+		   Left            = SS_LEFT            ,
+		   Center          = SS_CENTER          ,
+		   Right           = SS_RIGHT           ,
+		   Icon            = SS_ICON            ,
+		   BlackRect       = SS_BLACKRECT       ,
+		   GrayRect        = SS_GRAYRECT        ,
+		   WhiteRect       = SS_WHITERECT       ,
+		   BlackFrame      = SS_BLACKFRAME      ,
+		   GrayFrame       = SS_GRAYFRAME       ,
+		   WhiteFrame      = SS_WHITEFRAME      ,
+		   UserItem        = SS_USERITEM        ,
+		   Simple          = SS_SIMPLE          ,
+		   LeftNoWordWrap  = SS_LEFTNOWORDWRAP  ,
+		   OwnerDraw       = SS_OWNERDRAW       ,
+		   Bitmap          = SS_BITMAP          ,
+		   EnhMetaFile     = SS_ENHMETAFILE     ,
+		   EtchedHorz      = SS_ETCHEDHORZ      ,
+		   EtchedVert      = SS_ETCHEDVERT      ,
+		   EtchedFrame     = SS_ETCHEDFRAME     ,
+		   TypeMask        = SS_TYPEMASK        ,
+		   RealSizeControl = SS_REALSIZECONTROL ,
+		   NoPrefix        = SS_NOPREFIX        ,
+		   Notify          = SS_NOTIFY          ,
+		   CenterImage     = SS_CENTERIMAGE     ,
+		   RightJust       = SS_RIGHTJUST       ,
+		   RealSizeImage   = SS_REALSIZEIMAGE   ,
+		   Sunken          = SS_SUNKEN          ,
+		   EditControl     = SS_EDITCONTROL     ,
+		   EndEllipsis     = SS_ENDELLIPSIS     ,
+		   PathEllipsis    = SS_PATHELLIPSIS    ,
+		   WordEllipsis    = SS_WORDELLIPSIS    ,
+		   EllipsisMask    = SS_ELLIPSISMASK    );
+BaseOf_CommCtl(class StaticBase) {
+	SFINAE_CommCtl(StaticBase);
+public:
+	static constexpr TCHAR CtlClassName[] = WC_STATIC;
+	using Child = Chain<StaticBase<AnyChild>, AnyChild>;
+	using Super = ControlCommon<Child>;
+	using Style = StaticStyle;
+public:
+	StaticBase() {}
+#pragma region Properties
+public: // Property - Icon
+	/* W */ inline auto &Icon(HICON hIcon) ret_to_child(Super::Send(STM_SETICON, hIcon));
+	/* R */ inline CIcon Icon() const ret_as(Super::template Send<HICON>(STM_GETICON));
+public: // Property - ImageBitmap
+	/* W */ inline auto &ImageBitmap(HBITMAP hBitmap) ret_to_child(Super::Send(STM_SETIMAGE, IMAGE_BITMAP, hBitmap));
+	/* R */ inline CBitmap ImageBitmap() const ret_as(Super::template Send<HBITMAP>(STM_GETIMAGE, IMAGE_BITMAP));
+public: // Property - ImageIcon
+	/* W */ inline auto &ImageIcon(HICON hIcon) ret_to_child(Super::Send(STM_SETIMAGE, IMAGE_ICON, hIcon));
+	/* R */ inline CIcon ImageIcon() const ret_as(Super::template Send<HICON>(STM_GETIMAGE, IMAGE_ICON));
+public: // Property - ImageCursor
+	/* W */ inline auto &ImageCursor(HCURSOR hCursor) ret_to_child(Super::Send(STM_SETIMAGE, IMAGE_CURSOR, hCursor));
+	/* R */ inline CCursor ImageCursor() const ret_as(Super::template Send<HCURSOR>(STM_GETIMAGE, IMAGE_CURSOR));
+public: // Property - ImageEnhMeta
+	/* W */ inline auto &ImageEnhMeta(HENHMETAFILE hMeta) ret_to_child(Super::Send(STM_SETIMAGE, IMAGE_ENHMETAFILE, hMeta));
+//	/* R */ inline CEnhMeta ImageEnhMeta() const ret_as(Super::template Send<HENHMETAFILE>(STM_GETIMAGE, IMAGE_ENHMETAFILE));
+#pragma endregion
+};
+using Static = StaticBase<void>;
+using CStatic = ProxyView<Static>;
+#pragma endregion
+
+#pragma region Control Edit
+enum_flags(EditStyle   , CCStyle        ,
+		   Left        = ES_LEFT        ,
+		   Center      = ES_CENTER      ,
+		   Right       = ES_RIGHT       ,
+		   MultiLine   = ES_MULTILINE   ,
+		   UpperCase   = ES_UPPERCASE   ,
+		   LowerCase   = ES_LOWERCASE   ,
+		   Password    = ES_PASSWORD    ,
+		   AutoVScroll = ES_AUTOVSCROLL ,
+		   AutoHScroll = ES_AUTOHSCROLL ,
+		   NoHideSel   = ES_NOHIDESEL   ,
+		   OEMConvert  = ES_OEMCONVERT  ,
+		   ReadOnly    = ES_READONLY    ,
+		   WantReturn  = ES_WANTRETURN  ,
+		   Number      = ES_NUMBER      );
+enum_flags(EditMargin  , UINT           ,
+		   Left        = EC_LEFTMARGIN  ,
+		   Right       = EC_RIGHTMARGIN ,
+		   FontInfo    = EC_USEFONTINFO );
+struct EditBalloonTip : public StructShim<EDITBALLOONTIP> {
+	using Super = StructShim<EDITBALLOONTIP>;
+};
+BaseOf_CommCtl(class EditBase) {
+	SFINAE_CommCtl(EditBase);
+public:
+	static constexpr TCHAR CtlClassName[] = WC_EDIT;
+	using Super = ControlCommon<Chain<EditBase<AnyChild>, AnyChild>>;
+	using Style = EditStyle;
+	using Balloon = EditBalloonTip;
+public:
+	EditBase() {}
+public:
+#pragma region Methods
+	inline auto&ScrollCaret() ret_to_child(Super::Send(EM_SCROLLCARET));
+	inline bool LineScroll(int nLines) ret_as(Super::Send(EM_LINESCROLL, 0, nLines));
+	inline auto&ReplaceSel(LPCTSTR lpString, bool bUndo = false) ret_to_child(Super::Send(EM_REPLACESEL, bUndo, lpString));
+	inline bool Undo() ret_as(Super::Send(EM_UNDO));
+	inline auto&EmptyUndoBuffer() ret_to_child(Super::Send(EM_EMPTYUNDOBUFFER));
+
+//	inline auto&BalloonTip(const Balloon &tip) const safe_ret_as_self(Edit_ShowBalloonTip(self, &tip));
+//	inline auto&BalloonTip() const safe_ret_as_self(Edit_HideBalloonTip(self));
+#pragma endregion
+
+#pragma region Properties
+public: 
+	/* W */ inline auto &Sel(int to, int from) ret_to_child(Super::Send(EM_SETSEL, to, from));
+	/* R */ inline auto  Sel() const ret_to(struct { mx_b0(int to = 0, from = 0); } r; Super::Send(EM_GETSEL, &r.from, &r.to), r);
+public: 
+	/* W */ inline auto &Rect(WandX::Rect rc) ret_to_child(Super::Send(EM_SETRECT, O, rc));
+	/* R */ inline WandX::Rect Rect() const safe_ret_to(WandX::Rect rc, Super::Send(EM_GETRECT, O, &rc), rc);
+public: 
+	/* W */ inline auto &RectNp(WandX::Rect rc) ret_to_child(Super::Send(EM_SETRECTNP, O, rc));
+public: 
+	/* W */ inline auto &Modify(bool bModified) ret_to_child(Super::Send(EM_SETMODIFY, bModified));
+	/* R */ inline bool  Modify() const ret_as(Super::Send(EM_GETMODIFY));
+public: 
+	/* W */ inline auto  &Handle(HLOCAL hLocal) ret_to_child(Super::Send(EM_SETHANDLE, hLocal));
+	/* R */ inline HLOCAL Handle() const ret_as(Super::template Send<HLOCAL>(EM_GETHANDLE));
+public:
+	/* R */ inline int Thumb() const ret_as(Super::Send(EM_GETTHUMB));
+public:
+	/* R */ inline UINT LineCount() const ret_as(Super::Send(EM_GETLINECOUNT));
+public: 
+	/* R */ inline int LineIndex(int index) ret_as(Super::Send(EM_LINEINDEX, index));
+public:
+	/* R */ inline int LineLength(int nLine) ret_as(Super::Send(EM_LINELENGTH, nLine));
+public: 
+	/* W */ inline String Line(int nLine) const {
+		auto len = LineLength(nLine);
+		nt_assert(len > 0);
+		if (len == 0) return O;
+		String line(len);
+		nt_assert(Super::Send(EM_GETLINE, nLine, line));
+		return line;
+	}
+public: 
+	/* W */ inline auto &FmtLines(bool bFmtLines) ret_to_child(nt_assert(Super::Send(EM_FMTLINES, bFmtLines) == bFmtLines));
+public: 
+	/* W */ inline auto &LimitText(UINT limit) ret_to_child(Super::Send(EM_SETLIMITTEXT, limit));
+	/* R */ inline UINT  LimitText() const ret_as(Super::Send(EM_GETLIMITTEXT));
+public: 
+	/* R */ inline bool CanUndo() const ret_as(Super::Send(EM_CANUNDO));
+public: 
+public: 
+	/* R */ inline int FirstVisibleLine() const ret_as(Super::Send(EM_GETFIRSTVISIBLELINE));
+public: 
+	/* W */ inline auto &ReadOnly(bool bReadOnly) ret_to_child(nt_assert(Super::Send(EM_SETREADONLY, bReadOnly)));public: 
+	/* W */ inline auto &PasswordChar(TCHAR chr) ret_to_child(Super::Send(EM_SETPASSWORDCHAR, chr));
+	/* R */ inline TCHAR PasswordChar() const ret_as(Super::Send(EM_GETPASSWORDCHAR));
+//public: 
+//	/* W */ inline auto  &CueBanner(LPCTSTR lpString, bool bFocused = false) ret_to_child(Edit_SetCueBannerTextFocused(self, lpString, bFocused));
+//	/* R */ inline String CueBanner() const safe_ret_to(String cbt = MaxLenNotice, Edit_GetCueBannerText(self, cbt, MaxLenNotice + 1), cbt.Shrink());
+//public: 
+//	/* W */ inline auto &SearchWeb(bool bSearchWeb) ret_to_child(Edit_EnableSearchWeb(self, bSearchWeb));
+//public: 
+//	/* W */ inline auto &CaretIndex(DWORD newCaretIndex) ret_to_child(Edit_SetCaretIndex(self, newCaretIndex));
+//	/* R */ inline DWORD CaretIndex() const ret_as(Edit_GetCaretIndex(self));
+//public: 
+//	/* W */ inline auto &Zoom(int Numerator, int Denominator) ret_to_child(Edit_SetZoom(self, Numerator, Denominator));
+//	/* R */ inline auto  Zoom() const safe_ret_to(struct { mx_b0(int Numerator, Denominator); } z, Edit_GetZoom(self, &z.Numerator, &z.Denominator), z);
+//public: 
+//	/* R */ inline int FileLineIndex(int index) const ret_as(Edit_GetFileLineIndex(self, index));
+//public: 
+//	/* R */ inline int FileLineLength(int nLine) const ret_as(Edit_GetFileLineLength(self, nLine));
+//public: 
+//	/* R */ inline String FileLine(int nLine) const {
+//		auto len = FileLineLength(nLine);
+//		nt_assert(len > 0);
+//		if (len == 0) return O;
+//		String line(len);
+//		nt_assert(Edit_GetFileLine(self, nLine, line));
+//		return line;
+//	}
+//public: 
+//	/* R */ inline DWORD FileLineCount() const ret_as(Edit_GetFileLineCount(self));
+#pragma endregion
+};
+using Edit = EditBase<void>;
+using CEdit = ProxyView<Edit>;
+#pragma endregion
+
+#pragma region Control ListBox
+enum_flags(ListBoxStyle      , CCStyle               ,
+		   Notify            = LBS_NOTIFY            ,
+		   Sort              = LBS_SORT              ,
+		   NoRedraw          = LBS_NOREDRAW          ,
+		   MultipleSel       = LBS_MULTIPLESEL       ,
+		   OwnerDrawFixed    = LBS_OWNERDRAWFIXED    ,
+		   OwnerDrawVariable = LBS_OWNERDRAWVARIABLE ,
+		   HasStrings        = LBS_HASSTRINGS        ,
+		   UseTabStops       = LBS_USETABSTOPS       ,
+		   NoIntegralHeight  = LBS_NOINTEGRALHEIGHT  ,
+		   MultiColumn       = LBS_MULTICOLUMN       ,
+		   WantKeyboardInput = LBS_WANTKEYBOARDINPUT ,
+		   ExtendedSel       = LBS_EXTENDEDSEL       ,
+		   DisableNoScroll   = LBS_DISABLENOSCROLL   ,
+		   NoData            = LBS_NODATA            ,
+		   NoSel             = LBS_NOSEL             ,
+		   ComboBox          = LBS_COMBOBOX          ,
+		   Standard          = LBS_STANDARD          );
+//#define LB_OKAY             0
+//#define LB_ERR              (-1)
+//#define LB_ERRSPACE         (-2)
+
+//class ListBoxIItem {
+//	CWindow listbox;
+//	int index;
+//public:
+//	ListBoxIItem(CWindow listbox, int index) : listbox(listbox), index(index) {}
+//public: // Property - Data
+//	/* W */ inline auto &Data(LPARAM data) ret_to_self(listbox->Send(LB_SETITEMDATA, index, data));
+//	/* R */ inline LPARAM Data() const ret_as(listbox->Send<LPARAM>(LB_GETITEMDATA, index)); // LB_ERRxxx
+//public: // Property - Text
+//	/* W */ inline auto &Text(LPCTSTR lpszString) ret_to_self(listbox->Send(LB_SETITEMDATA, index, lpszString));
+//	/* R */ inline String Text() const {
+//		auto len = listbox->Send<int>(LB_GETTEXTLEN, index);
+//		if (len == LB_ERR || len <= 0) return O;
+//		String str(len);
+//		listbox->Send(LB_GETTEXT, index, str);
+//		return str;
+//	}
+//public: // Property - Selected
+//	/* W */ inline auto &Selected(bool bSelected) ret_to_self(listbox->Send(LB_SETSEL, bSelected, index));
+//	/* R */ inline bool Selected() const ret_as(listbox->Send<int>(LB_GETSEL, index) != 0); // LB_ERRxxx
+//};
+BaseOf_CommCtl(class ListBoxBase) {
+	SFINAE_CommCtl(ListBoxBase);
+public:
+	static constexpr TCHAR CtlClassName[] = WC_LISTBOX;
+	using Super = ControlCommon<Chain<ListBoxBase<AnyChild>, AnyChild>>;
+	using Style = ListBoxStyle;
+public:
+	ListBoxBase() {}
+
+public:
+	inline void Add(LPCTSTR lpszString) safe_ret_as(Super::Send(LB_ADDSTRING, O, lpszString)); // LB_ERRxxx
+	inline void Insert(LPCTSTR lpszString, int index = -1) safe_ret_as(Super::Send(LB_INSERTSTRING, index, lpszString)); // LB_ERRxxx
+	inline void Delete(int index) safe_ret_as(Super::Send(LB_DELETESTRING, index)); // LB_ERRxxx
+	inline void ResetContent() safe_ret_as(Super::Send(LB_RESETCONTENT));
+
+	inline void SelItemRange(int start, int end, bool bSelect) const safe_ret_as(Super::Send(LB_SELITEMRANGE, bSelect, MAKELPARAM(start, end))); // CB_ERRxxx
+	inline void SelItemRange(int start, int end) const safe_ret_as(Super::Send(LB_SELITEMRANGEEX, start, end)); // LB_ERRxxx
+
+public: // Property - Count
+	/* W */ inline auto&Count(int count) ret_to_self(Super::Send(LB_SETCOUNT, count)); // LB_ERRxxx
+	/* R */ inline auto Count() const ret_as(Super::template Send<int>(LB_GETCOUNT)); // LB_ERRxxx
+public: // 
+};
+using ListBox = ListBoxBase<void>;
+using CListBox = ProxyView<ListBox>;
+#pragma endregion
+
+#pragma region Control ComboBox
+enum_flags(ComboBoxStyle      , CCStyle               ,
+		   Simple             = CBS_SIMPLE            ,
+		   DropDown           = CBS_DROPDOWN          ,
+		   DropDownList       = CBS_DROPDOWNLIST      ,
+		   OwnerDrawFixed     = CBS_OWNERDRAWFIXED    ,
+		   OwnerDrawVariable  = CBS_OWNERDRAWVARIABLE ,
+		   AutoHScroll        = CBS_AUTOHSCROLL       ,
+		   OEMConvert         = CBS_OEMCONVERT        ,
+		   Sort               = CBS_SORT              ,
+		   HasStrings         = CBS_HASSTRINGS        ,
+		   NoIntegralHeight   = CBS_NOINTEGRALHEIGHT  ,
+		   DisableNoScroll    = CBS_DISABLENOSCROLL   ,
+		   UpperCase          = CBS_UPPERCASE         ,
+		   LowerCase          = CBS_LOWERCASE         );
+BaseOf_CommCtl(class ComboBoxBase) {
+	SFINAE_CommCtl(ComboBoxBase);
+public:
+	static constexpr TCHAR CtlClassName[] = WC_COMBOBOX;
+	using Super = ControlCommon<Chain<ComboBoxBase<AnyChild>, AnyChild>>;
+	using Style = ComboBoxStyle;
+public:
+	ComboBoxBase() {}
+};
+using ComboBox = ComboBoxBase<void>;
+using CComboBox = ProxyView<ComboBox>;
+#pragma endregion
+
+#pragma region Control ScrollBar
+enum_flags(ScrollBarStyle          , CCStyle                     ,
+		   Horz                    = SBS_HORZ                    ,
+		   Vert                    = SBS_VERT                    ,
+		   TopAlign                = SBS_TOPALIGN                ,
+		   LeftAlign               = SBS_LEFTALIGN               ,
+		   BottomAlign             = SBS_BOTTOMALIGN             ,
+		   RightAlign              = SBS_RIGHTALIGN              ,
+		   SizeBoxTopLeftAlign     = SBS_SIZEBOXTOPLEFTALIGN     ,
+		   SizeBoxBottomRightAlign = SBS_SIZEBOXBOTTOMRIGHTALIGN ,
+		   SizeBox                 = SBS_SIZEBOX                 ,
+		   SizeGrip                = SBS_SIZEGRIP                );
+struct ScrollBarInfo : public StructShim<SCROLLBARINFO> {
+	using Super = StructShim<SCROLLBARINFO>;
+public:
+	ScrollBarInfo() ret_to(self->cbSize = sizeof(SCROLLBARINFO));
+	ScrollBarInfo(const SCROLLBARINFO &s) : Super(s) {}
+	proxy_prop_sync(Rect,rcScrollBar,WandX::Rect);
+	proxy_prop(LineButton, dxyLineButton, int, auto);
+	proxy_prop(ThumbTop, xyThumbTop, int, auto);
+	proxy_prop(ThumbBottom, xyThumbBottom, int, auto);
+public: // Property - 
+	
+};
+BaseOf_CommCtl(class ScrollBarBase) {
+	SFINAE_CommCtl(ScrollBarBase);
+public:
+	static constexpr TCHAR CtlClassName[] = WC_SCROLLBAR;
+	using Super = ControlCommon<Chain<ScrollBarBase<AnyChild>, AnyChild>>;
+	using Style = ScrollBarStyle;
+public:
+	ScrollBarBase() {}
+
+#pragma region Properties
+public: // Property - Position
+	/* W */ inline auto&Position(int Pos, bool bRedraw = true) ret_to_child(Super::Send(SBM_SETPOS, Pos, bRedraw));
+	/* R */ inline auto Position() const ret_as(Super::template Send<int>(SBM_GETPOS));
+public: // Property - Range
+	/* W */ inline auto&Range(RangeOf<int> r) ret_to_child(Super::Send(SBM_SETRANGE, r.min, r.max));
+	/* R */ inline auto Range() const safe_ret_to(RangeOf<int> r(0, 0), Super::Send(SBM_GETRANGE, &r.min, &r.max), r);
+public: // Property - ScrollInfo
+	/* W */ inline auto&ScrollInfo(const SCROLLINFO &i, bool bRedraw = true) ret_to_self(Super::Send(SBM_SETSCROLLINFO, bRedraw, &i));
+	/* R */ inline auto ScrollInfo() const safe_ret_to(WandX::ScrollInfo i, Super::Send(SBM_GETSCROLLINFO, 0, &i), i);
+public: // Property - Info
+	/* R */ inline auto Info() const safe_ret_to(ScrollBarInfo i, Super::Send(SBM_GETSCROLLBARINFO, 0, &i), i);
+#pragma endregion
+};
+using ScrollBar = ScrollBarBase<void>;
+using CScrollBar = ProxyView<ScrollBar>;
+#pragma endregion
+
+}

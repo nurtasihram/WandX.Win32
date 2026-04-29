@@ -1,0 +1,536 @@
+enum_class(ResourceTypes , LPTSTR          ,
+		   Cursor        = RT_CURSOR       ,
+		   Bitmap        = RT_BITMAP       ,
+		   Icon          = RT_ICON         ,
+		   Menu          = RT_MENU         ,
+		   Dialog        = RT_DIALOG       ,
+		   String        = RT_STRING       ,
+		   FontDir       = RT_FONTDIR      ,
+		   Font          = RT_FONT         ,
+		   Accelerator   = RT_ACCELERATOR  ,
+		   RCDATA        = RT_RCDATA       ,
+		   MessageTable  = RT_MESSAGETABLE ,
+		   GroupCursor   = RT_GROUP_CURSOR ,
+		   GroupIcon     = RT_GROUP_ICON   ,
+		   Version       = RT_VERSION      ,
+		   DlgInclude    = RT_DLGINCLUDE   ,
+		   PlugPlay      = RT_PLUGPLAY     ,
+		   VXD           = RT_VXD          ,
+		   AniCursor     = RT_ANICURSOR    ,
+		   AniIcon       = RT_ANIICON      ,
+		   HTML          = RT_HTML         ,
+		   Manifest      = RT_MANIFEST     );
+
+#pragma region Icon
+class IconInfo : public StructShim<ICONINFO> {
+public:
+	using Super = StructShim<ICONINFO>;
+public:
+	IconInfo(bool fIcon = true) ret_to(self->fIcon = fIcon);
+	IconInfo(const ICONINFO &i) : Super(i) {}
+	~IconInfo() {
+		Bitmap::AutoDelete(self->hbmMask);
+		Bitmap::AutoDelete(self->hbmColor);
+	}
+public: // Property - Hotspot
+	/* W */ inline auto &Hotspot(Point s) ret_to_self(self->xHotspot = s.x, self->yHotspot = s.y);
+	/* R */ inline Point Hotspot() const ret_as({ (long)self->xHotspot, (long)self->yHotspot });
+public: // Property - Masks
+proxy_prop_set(Mask, HBITMAP, hbmMask);
+	/* R */ inline Bitmap &Mask() const ret_as(Bitmap::Attach(const_cast<HBITMAP &>(self->hbmMask)));
+public: // Property - Colors
+proxy_prop_set(Colors, HBITMAP, hbmColor);
+	/* R */ inline Bitmap &Colors() const ret_as(Bitmap::Attach(const_cast<HBITMAP &>(self->hbmColor)));
+};
+using CIconInfo = ProxyView<IconInfo>;
+template<bool IsUnicode = Native::IsUnicode>
+class IconInfoExX : public StructShim<std::conditional_t<IsUnicode, ICONINFOEXW, ICONINFOEXA>> {
+	using ICONINFOEX = std::conditional_t<IsUnicode, ICONINFOEXW, ICONINFOEXA>;
+	using String = StringX<IsUnicode>;
+public:
+	using Super = StructShim<ICONINFOEX>;
+public:
+	IconInfoExX() ret_to(self->cbSize = sizeof(self); self->fIcon = true);
+	IconInfoExX(const ICONINFOEX &i) : Super(i) {}
+	~IconInfoExX() {
+		Bitmap::AutoDelete(self->hbmMask);
+		Bitmap::AutoDelete(self->hbmColor);
+	}
+public: // Property - Hotspot
+	/* W */ inline auto &Hotspot(WandX::Size s) ret_to_self(self->xHotspot = s.cx, self->yHotspot = s.cy);
+	/* R */ inline WandX::Size Hotspot() const ret_as({ (long)self->xHotspot, (long)self->yHotspot });
+public: // Property - Masks
+proxy_prop_set(Masks, HBITMAP, hbmMask);
+	/* R */ inline Bitmap &Masks() const ret_as(Bitmap::Attach(const_cast<HBITMAP &>(self->hbmMask)));
+public: // Property - Colors
+proxy_prop_set(Colors, HBITMAP, hbmColor);
+	/* R */ inline Bitmap &Colors() const ret_as(Bitmap::Attach(const_cast<HBITMAP &>(self->hbmColor)));
+	proxy_prop_sync(ResourceID,wResID,WORD);
+public: // Property - ModuleName
+	/* R */ inline const String ModuleName() const ret_as(CString(self->szModName, ArrayCountOf(self->szModName)));
+public: // Property - ResourceName
+	/* R */ inline const String ResourceName() const ret_as(CString(self->szResName, ArrayCountOf(self->szResName)));
+};
+using IconInfoEx = IconInfoExX<>;
+using IconInfoExA = IconInfoExX<false>;
+using IconInfoExW = IconInfoExX<true>;
+class Icon {
+protected:
+	mutable HICON hIcon = O;
+	proxy_basetype(Icon);
+	Icon(HICON h) : hIcon(h) {}
+	Icon(const Icon &i) : hIcon(i.hIcon) ret_to(i.hIcon = O);
+public:
+	Icon() {}
+	Icon(Nu) {}
+	Icon(Icon &i) : hIcon(i.hIcon) ret_to(i.hIcon = O);
+	Icon(Icon &&i) : hIcon(i.hIcon) ret_to(i.hIcon = O);
+	~Icon() ret_to(Destroy());
+public:
+	class CreateStruct {
+		HINSTANCE hInstance = GetModuleHandle((LPCTSTR)O);
+		int nWidth, nHeight;
+		BYTE nPlanes = 1, nBitsPerPixel = 32;
+		LPCBYTE lpANDbits = O, lpXORbits = O;
+	public:
+		CreateStruct(LPCBYTE lpANDbits, LPCBYTE lpXORbits) :
+			lpANDbits(lpANDbits), lpXORbits(lpXORbits) {}
+	public:
+		inline auto &Module(HINSTANCE hInstance) ret_to_self(this->hInstance = hInstance);
+		inline auto &Width(LONG nWidth) ret_to_self(this->nWidth = nWidth);
+		inline auto &Height(LONG nHeight) ret_to_self(this->nHeight = nHeight);
+		inline auto &Size(WandX::Size sz) ret_to_self(this->nWidth = sz.cx, this->nHeight = sz.cy);
+		inline auto &Planes(UINT nPlanes) ret_to_self(this->nPlanes = nPlanes);
+		inline auto &BitsPerPixel(UINT nBitsPerPixel) ret_to_self(this->nBitsPerPixel = nBitsPerPixel);
+		inline auto &Mask(LPCVOID lpBits) ret_to_self(this->lpANDbits = (LPCBYTE)lpBits);
+		inline auto &Colors(LPCVOID lpBits) ret_to_self(this->lpXORbits = (LPCBYTE)lpBits);
+	public:
+		inline Icon Create() const ret_as(WandX::CreateIcon(hInstance, nWidth, nHeight, nPlanes, nBitsPerPixel, lpANDbits, lpXORbits));
+		inline operator Icon() const ret_as(Create());
+	};
+	static inline CreateStruct Create(LPCBYTE lpANDbits, LPCBYTE lpXORbits = O) ret_as({ lpANDbits, lpXORbits });
+	static inline Icon Create(HBITMAP hbmColor, HBITMAP hbmMask = O) ret_as(WandX::CreateIcon(&CIconInfo(IconInfo())->Colors(hbmColor).Mask(hbmMask)));
+	inline void Destroy() {
+		if (self)
+			WandX::DestroyIcon(hIcon);
+		hIcon = O;
+	}
+#pragma region Properties
+public: // Property - Info
+	/* R */ inline IconInfo Info() const ret_to(ICONINFO i, WandX::GetIconInfo(hIcon, &i), i);
+public: // Property - Masks
+	/* R */ inline Bitmap Mask() const ret_as(Info().Mask());
+public: // Property - Colors
+	/* R */ inline Bitmap Colors() const ret_as(Info().Colors());
+public: // Property - Hotspot
+	/* R */ inline Point Hotspot() const ret_as(Info().Hotspot());
+public: // Property - InfoEx
+	template<bool IsUnicode = Native::IsUnicode>
+	/* R */ inline IconInfoExX<IsUnicode> InfoEx() const ret_to(IconInfoExX<IsUnicode> i, WandX::GetIconInfoEx(hIcon, &i), i);
+	/* R */ inline IconInfoExA InfoExA() const ret_as(InfoEx<false>());
+	/* R */ inline IconInfoExW InfoExW() const ret_as(InfoEx<true>());
+#pragma endregion
+public:
+	inline operator HICON() const ret_as(hIcon);
+	inline Icon operator+() const ret_as(WandX::CopyIcon(hIcon));
+	inline auto &operator=(Icon &i) ret_to_self(std::swap(hIcon, i.hIcon));
+	inline auto &operator=(Icon &&i) ret_to_self(std::swap(hIcon, i.hIcon));
+	inline auto &operator=(const Icon &i) const ret_to_self(std::swap(hIcon, i.hIcon));
+public:
+	static inline Icon &Attach(HICON &hIcon) ret_as(ref_cast<Icon>(hIcon));
+	static inline const Icon &Attach(const HICON &hIcon) ret_as(ref_cast<const Icon>(hIcon));
+};
+using CIcon = ProxyView<Icon>;
+#pragma endregion
+
+#pragma region Cursor
+class Cursor : public Icon {
+public:
+	using Super = Icon;
+protected:
+	proxy_basetype(Cursor);
+	Cursor(HCURSOR h) : Super((HICON)h) {}
+	Cursor(const Cursor &c) : Icon(c) {}
+public:
+	Cursor() {}
+	Cursor(Nu) {}
+	Cursor(Cursor &i) : Super(i) {}
+	Cursor(Cursor &&i) : Super(i) {}
+	~Cursor() ret_to(Destroy());
+public:
+	class CreateStruct {
+		HINSTANCE hInstance = GetModuleHandle((LPCTSTR)O);
+		int nWidth = 0, nHeight = 0, xHotspot = 0, yHotspot = 0;
+		LPCBYTE lpANDbits, lpXORbits;
+	public:
+		CreateStruct(LPCBYTE lpANDbits, LPCBYTE lpXORbits, Point Hotspot) :
+			xHotspot(Hotspot.x), yHotspot(Hotspot.y), lpANDbits(lpANDbits), lpXORbits(lpXORbits) {}
+	public:
+		inline auto &Module(HINSTANCE hInstance) ret_to_self(this->hInstance = hInstance);
+		inline auto &Hotspot(WandX::Size s) ret_to_self(this->xHotspot = s.cx, this->yHotspot = s.cy);
+		inline auto &Width(LONG nWidth) ret_to_self(this->nWidth = nWidth);
+		inline auto &Height(LONG nHeight) ret_to_self(this->nHeight = nHeight);
+		inline auto &Size(WandX::Size sz) ret_to_self(this->nWidth = sz.cx, this->nHeight = sz.cy);
+	public:
+		inline Cursor Create() const ret_as(WandX::CreateCursor(hInstance, xHotspot, yHotspot, nWidth, nHeight, lpANDbits, lpXORbits));
+		inline operator Cursor() const ret_as(Create());
+	};
+	static inline CreateStruct Create(LPCBYTE lpANDbits, LPCBYTE lpXORbits = O, Point Hotspot = 0) ret_as({ lpANDbits, lpXORbits, Hotspot });
+	static inline Cursor Create(HBITMAP hbmColor, HBITMAP hbmMask = O, Point Hotspot = 0) ret_as(WandX::CreateIcon(&CIconInfo(IconInfo())->Colors(hbmColor).Mask(hbmMask)));
+	inline void Destroy() {
+		if (self) 
+			WandX::DestroyCursor(Super::hIcon);
+		Super::hIcon = O;
+	}
+public:
+	inline operator HCURSOR() const ret_as((HCURSOR)Super::hIcon);
+	inline Cursor operator+() const ret_as(WandX::CopyIcon(Super::hIcon));
+	inline auto &operator=(Cursor &i) ret_to_self(std::swap(hIcon, i.hIcon));
+	inline auto &operator=(Cursor &&i) ret_to_self(std::swap(hIcon, i.hIcon));
+	inline auto &operator=(const Cursor &i) const ret_to_self(std::swap(hIcon, i.hIcon));
+public:
+	static inline Cursor &Attach(HCURSOR &hCursor) ret_as(ref_cast<Cursor>(hCursor));
+	static inline const Cursor &Attach(const HCURSOR &hCursor) ret_as(ref_cast<const Cursor>(hCursor));
+};
+using CCursor = ProxyView<Cursor>;
+struct CursorInfo : public StructShim<CURSORINFO> {
+	using Super = StructShim<CURSORINFO>;
+public:
+	CursorInfo() ret_to(self->cbSize = sizeof(self));
+	CursorInfo(const CURSORINFO &c) : Super(c) {}
+public: // Property - Visible
+	/* W */ inline auto &Visible(bool bVisible) ret_to_self(bVisible ? self->flags |= CURSOR_SHOWING : self->flags &= ~CURSOR_SHOWING);
+	/* R */ inline bool Visible() const ret_as(self->flags &CURSOR_SHOWING);
+	proxy_prop(Cursor,hCursor,HCURSOR,CCursor);
+	proxy_prop_sync(Position,ptScreenPos,Point);
+};
+class CursorItf {
+public:
+	static inline void Show() ret_to(WandX::ShowCursor(TRUE));
+	static inline void Hide() ret_to(WandX::ShowCursor(FALSE));
+#pragma region Properties
+public: // Property - Info
+	/* R */ static inline CursorInfo Info() ret_to(CursorInfo ci; WandX::GetCursorInfo(&ci), ci);
+public: // Property - Visible
+	/* W */ inline auto &Visible(bool bVisible) ret_to_self(WandX::ShowCursor(bVisible));
+public: // Property - Position
+	/* W */ inline auto &Position(Point p) ret_to_self(WandX::SetCursorPos(p.x, p.y));
+	/* R */ static inline Point Position() ret_to(Point p; WandX::GetCursorPos(&p), p);
+public: // Property - PhysicalPosition
+	/* W */ inline auto &PhysicalPosition(Point p) ret_to_self(WandX::SetPhysicalCursorPos(p.x, p.y));
+	/* R */ static inline Point PhysicalPosition() ret_to(Point p; WandX::GetPhysicalCursorPos(&p), p);
+public: // Property - ClipRect
+	/* W */ inline auto &ClipRect(WandX::Rect r) ret_to_self(WandX::ClipCursor(&r));
+	/* R */ static inline WandX::Rect ClipRect() ret_to(WandX::Rect r; WandX::GetClipCursor(&r), r);
+#pragma endregion
+public:
+	inline operator CCursor() const ret_as(WandX::GetCursor());
+	inline auto &operator=(HCURSOR hCursor) ret_to_self(WandX::SetCursor(hCursor));
+} ICursor;
+#pragma endregion
+
+#pragma region Accelerators
+enum_flags(VirtualKey , BYTE      ,
+		   NoInvert   = FNOINVERT ,
+		   Shift      = FSHIFT    ,
+		   Control    = FCONTROL  ,
+		   Alt        = FALT      );
+class AccelEntry : public StructShim<ACCEL> {
+public:
+	using Super = StructShim<ACCEL>;
+public:
+	AccelEntry() {}
+	AccelEntry(WandX::VirtualKey vk, WORD key, WORD cmd) : Super(ACCEL{ vk.yield(), key, cmd }) {}
+public: // Property - VirtualKey
+	/* W */ inline auto&VirtualKey(WandX::VirtualKey vk) ret_to_self(self->fVirt = vk.yield());
+	/* R */ inline auto VirtualKey() const ret_as(reuse_cast<WandX::VirtualKey>(self->fVirt));
+	proxy_prop_sync(Key,key,WORD);
+	proxy_prop_sync(CommandID,cmd,WORD);
+};
+class Accelerators {
+protected:
+	mutable HACCEL hAccel = O;
+	proxy_basetype(Accelerators);
+	Accelerators(HACCEL h) : hAccel(h) {}
+	Accelerators(const Accelerators &c) : hAccel(c.hAccel) ret_to(c.hAccel = O);
+public:
+	Accelerators() {}
+	Accelerators(const std::vector<AccelEntry> &entries) : hAccel() {}
+	~Accelerators() ret_to(Destroy());
+public:
+	static inline Accelerators Create(const std::vector<AccelEntry> &entries)
+		ret_as(WandX::CreateAcceleratorTable((ACCEL *)entries.data(), (int)entries.size()));
+	inline void Destroy() {
+		if (hAccel)
+			WandX::DestroyAcceleratorTable(hAccel);
+		hAccel = O;
+	}
+public:
+	inline operator bool() const ret_as(hAccel);
+	inline operator HACCEL() const ret_as(hAccel);
+	inline auto &operator=(Accelerators &a) ret_to_self(std::swap(hAccel, a.hAccel));
+	inline auto &operator=(const Accelerators &a) const ret_to_self(std::swap(hAccel, a.hAccel));
+};
+using Accel = Accelerators;
+using CAccelerators = ProxyView<Accelerators>;
+using CAccel = ProxyView<Accelerators>;
+#pragma endregion
+
+#pragma region Menu
+class Menu;
+using CMenu = ProxyView<Menu>;
+//enum_class(MenuBmp, HBITMAP,
+//	Callback      = HBMMENU_CALLBACK,
+//	System        = HBMMENU_SYSTEM,
+//	BarRestore    = HBMMENU_MBAR_RESTORE,
+//	BarMinimize   = HBMMENU_MBAR_MINIMIZE,
+//	BarClose      = HBMMENU_MBAR_CLOSE,
+//	BarCloseD     = HBMMENU_MBAR_CLOSE_D,
+//	BarMinimizeD  = HBMMENU_MBAR_MINIMIZE_D,
+//	PopupClose    = HBMMENU_POPUP_CLOSE,
+//	PopupRestore  = HBMMENU_POPUP_RESTORE,
+//	PopupMaximize = HBMMENU_POPUP_MAXIMIZE,
+//	PopupMinimize = HBMMENU_POPUP_MINIMIZE);
+enum_flags(MenuItemType  , UINT             ,
+		   String        = MFT_STRING       ,
+		   Bitmap        = MFT_BITMAP       ,
+		   BarBreak      = MFT_MENUBARBREAK ,
+		   Break         = MFT_MENUBREAK    ,
+		   OwnerDraw     = MFT_OWNERDRAW    ,
+		   RadioCheck    = MFT_RADIOCHECK   ,
+		   Separator     = MFT_SEPARATOR    ,
+		   RightOrder    = MFT_RIGHTORDER   ,
+		   RightJustify  = MFT_RIGHTJUSTIFY );
+enum_flags(MenuItemState , UINT             ,
+		   Default       = MFS_DEFAULT      ,
+		   Grayed        = MFS_GRAYED       ,
+		   Enabled       = MFS_ENABLED      ,
+		   Disabled      = MFS_DISABLED     ,
+		   Checked       = MFS_CHECKED      ,
+		   Unchecked     = MFS_UNCHECKED    ,
+		   Hilite        = MFS_HILITE       ,
+		   Unhilite      = MFS_UNHILITE     );
+enum_flags(MenuStyle     , DWORD            ,
+		   NoCheck       = MNS_NOCHECK      ,
+		   Modeless      = MNS_MODELESS     ,
+		   DragDrop      = MNS_DRAGDROP     ,
+		   AutoDismiss   = MNS_AUTODISMISS  ,
+		   NotifyByPos   = MNS_NOTIFYBYPOS  ,
+		   CheckOrBmp    = MNS_CHECKORBMP   );
+class MenuIItems {
+	friend class Menu;
+	HMENU hMenu;
+//	UINT uID, flags;
+protected:
+	MenuIItems(HMENU hMenu) : hMenu(hMenu) {}
+public:
+//	inline void Delete(UINT uID) ret_to(WandX::DeleteMenu(hMenu, uID, flags));
+//	inline void Remove(UINT uID) ret_to(WandX::RemoveMenu(hMenu, uID, flags));
+//	inline auto&Hilite(HWND hWnd, bool bHilite = true) ret_to_self(HiliteMenuItem(hWnd, hMenu, uID, flags | (bHilite ? MF_HILITE : MF_UNHILITE)));
+//	CMenu Sub(int nPos);
+public: // Property - Count
+	inline auto Count() const ret_as(WandX::GetMenuItemCount(hMenu));
+//public: // Property - Enable
+//	/* W */ inline auto &Enable(bool bEnable) ret_to_self(WandX::EnableMenuItem(hMenu, uID, flags | (bEnable ? MF_ENABLED : (MF_DISABLED | MF_GRAYED))));
+//public: // Property - Check
+//	/* W */ inline auto &Check(bool bChecked) ret_to_self(WandX::CheckMenuItem(hMenu, uID, flags | (bChecked ? MF_CHECKED : MF_UNCHECKED)));
+};
+enum_flags(MenuTrack        , UINT                ,
+		   LeftButton       = TPM_LEFTBUTTON      ,
+		   RightButton      = TPM_RIGHTBUTTON     ,
+		   LeftAlign        = TPM_LEFTALIGN       ,
+		   CenterAlign      = TPM_CENTERALIGN     ,
+		   RightAlign       = TPM_RIGHTALIGN      ,
+		   TopAlign         = TPM_TOPALIGN        ,
+		   VCenterAlign     = TPM_VCENTERALIGN    ,
+		   BottomAlign      = TPM_BOTTOMALIGN     ,
+		   Horizontal       = TPM_HORIZONTAL      ,
+		   Vertical         = TPM_VERTICAL        ,
+		   NoNotify         = TPM_NONOTIFY        ,
+		   ReturnCmd        = TPM_RETURNCMD       ,
+		   Recurse          = TPM_RECURSE         ,
+		   HorPosAnimation  = TPM_HORPOSANIMATION ,
+		   HorNegAnimation  = TPM_HORNEGANIMATION ,
+		   VerPosAnimation  = TPM_VERPOSANIMATION ,
+		   VerNegAnimation  = TPM_VERNEGANIMATION ,
+		   NoAnimation      = TPM_NOANIMATION     ,
+		   LayoutRtl        = TPM_LAYOUTRTL       ,
+		   WorkArea         = TPM_WORKAREA        );
+class Menu {
+protected:
+	mutable HMENU hMenu = O;
+	proxy_basetype(Menu);
+	Menu(HMENU h) : hMenu(h) {}
+	Menu(const Menu &m) : hMenu(m.hMenu) ret_to(m.hMenu = O);
+public:
+	Menu() : Menu(Create()) {}
+	Menu(Nu) {}
+	Menu(Menu &m) : hMenu(m) ret_to(m.hMenu = O);
+	Menu(Menu &&m) : hMenu(m) ret_to(m.hMenu = O);
+	~Menu() ret_to(Destroy());
+public:
+	static inline Menu Create() ret_as(WandX::CreateMenu());
+	static inline Menu CreatePopup() ret_as(WandX::CreatePopupMenu());
+	inline void Destroy() {
+		if (self)
+			WandX::DestroyMenu(hMenu);
+		hMenu = O;
+	}
+public:
+	inline auto&String(LPCSTR lpString, UINT_PTR uID = 0, bool bEnable = true) ret_to_self(WandX::AppendMenu(hMenu, MF_STRING | (bEnable ? MF_ENABLED : (MF_DISABLED | MF_GRAYED)), uID, lpString));
+	inline auto&String(LPCWSTR lpString, UINT_PTR uID = 0, bool bEnable = true) ret_to_self(WandX::AppendMenu(hMenu, MF_STRING | (bEnable ? MF_ENABLED : (MF_DISABLED | MF_GRAYED)), uID, lpString));
+	inline auto&Popup(LPCSTR lpString, HMENU hPopup, bool bEnable = true) ret_to_self(WandX::AppendMenu(hMenu, MF_POPUP | (bEnable ? MF_ENABLED : (MF_DISABLED | MF_GRAYED)), (UINT_PTR)hPopup, lpString));
+	inline auto&Popup(LPCWSTR lpString, HMENU hPopup, bool bEnable = true) ret_to_self(WandX::AppendMenu(hMenu, MF_POPUP | (bEnable ? MF_ENABLED : (MF_DISABLED | MF_GRAYED)), (UINT_PTR)hPopup, lpString));
+	inline auto&Check(LPCSTR lpString, UINT_PTR uID = 0, bool bChecked = false, bool bEnable = true) ret_to_self(WandX::AppendMenu(hMenu, (bChecked ? MF_CHECKED : MF_UNCHECKED) | (bEnable ? MF_ENABLED : (MF_DISABLED | MF_GRAYED)), uID, lpString));
+	inline auto&Check(LPCWSTR lpString, UINT_PTR uID = 0, bool bChecked = false, bool bEnable = true) ret_to_self(WandX::AppendMenu(hMenu, (bChecked ? MF_CHECKED : MF_UNCHECKED) | (bEnable ? MF_ENABLED : (MF_DISABLED | MF_GRAYED)), uID, lpString));
+	inline auto&Separator() ret_to_self(WandX::AppendMenu(hMenu, MF_SEPARATOR, 0, (LPCTSTR)O));
+
+	inline auto&String(UINT uPosition, LPCTSTR lpString, UINT_PTR uID = 0, bool bEnable = true) ret_to_self(WandX::InsertMenu(hMenu, uPosition, MF_STRING | (bEnable ? MF_ENABLED : MF_DISABLED), uID, lpString));
+	inline auto&Popup(UINT uPosition, LPCTSTR lpString, HMENU hPopup) ret_to_self(WandX::InsertMenu(hMenu, uPosition, MF_POPUP, (UINT_PTR)hPopup, lpString));
+	inline auto&Check(UINT uPosition, LPCTSTR lpString, UINT_PTR uID = 0, bool bChecked = false) ret_to_self(WandX::InsertMenu(hMenu, uPosition, (bChecked ? MF_CHECKED : MF_UNCHECKED), uID, lpString));
+	inline auto&Separator(UINT uPosition) ret_to_self(WandX::InsertMenu(hMenu, uPosition, MF_SEPARATOR, 0, (LPCTSTR)O));
+
+	inline auto&Radio(UINT idFirst, UINT idLast, UINT idCheck) ret_to_self(WandX::CheckMenuRadioItem(hMenu, idFirst, idLast, idCheck, MF_BYCOMMAND));
+	inline auto&RadioIndex(UINT indFirst, UINT indLast, UINT indCheck) ret_to_self(WandX::CheckMenuRadioItem(hMenu, indFirst, indLast, indCheck, MF_BYPOSITION));
+public:	
+	inline void Track(MenuTrack tt, POINT pt, HWND hParent) const ret_to(WandX::TrackPopupMenu(hMenu, tt.yield(), pt.x, pt.y, 0, hParent, O));
+	//inline auto Modify(UINT uID) ret_as(ModifyMenu(hMenu, uID, MF_BYCOMMAND, ));
+
+public:
+	inline operator bool() const ret_as(WandX::IsMenu(hMenu));
+	inline operator HMENU() const ret_as(hMenu);
+	inline operator LPARAM() const ret_as((LPARAM)hMenu);
+	inline auto &operator=(Menu &m) ret_to_self(std::swap(hMenu, m.hMenu));
+	inline auto &operator=(const Menu &m) const ret_to_self(std::swap(hMenu, m.hMenu));
+public:
+	static inline Menu &Attach(HMENU &hMenu) ret_as(ref_cast<Menu>(hMenu));
+	static inline const Menu &Attach(const HMENU &hMenu) ret_as(ref_cast<const Menu>(hMenu));
+};
+//inline CMenu MenuItem::Sub(int nPos) ret_as({ WandX::GetSubMenu(hMenu, nPos) });
+inline Menu MenuPopup() ret_as(Menu::CreatePopup());
+#undef MENUITEM_PROPERTY
+#pragma endregion
+
+#pragma region Module
+class Module {
+protected:
+	mutable HINSTANCE hInst = O;
+	proxy_basetype(Module);
+	Module(HINSTANCE h) : hInst(h) {}
+	Module(const Module &m) : hInst(m.hInst) ret_to(m.hInst = O);
+public:
+	Module() : hInst(GetModuleHandle((LPCTSTR)O)) {}
+	Module(Nu) {}
+	Module(Module &m) : hInst(m) ret_to(m.hInst = O);
+	Module(Module &&m) : hInst(m) ret_to(m.hInst = O);
+	Module(LPCSTR lpModuleName) : hInst(Handle(lpModuleName)) {}
+	Module(LPCWSTR lpModuleName) : hInst(Handle(lpModuleName)) {}
+	~Module() ret_to(Free());
+public:
+	static inline Module Handle(LPCSTR lpModuleName) ret_as(WandX::GetModuleHandle(lpModuleName));
+	static inline Module Handle(LPCWSTR lpModuleName) ret_as(WandX::GetModuleHandle(lpModuleName));
+	static inline Module Library(LPCSTR lpLibFileName) ret_as(WandX::LoadLibrary(lpLibFileName));
+	static inline Module Library(LPCWSTR lpLibFileName) ret_as(WandX::LoadLibrary(lpLibFileName));
+//	static inline Module Load(LPCSTR lpModuleName, LPVOID lpParameterBlock = O) ret_as(LoadModule(lpModuleName, lpParameterBlock));
+public:
+	inline void Free() {
+		if (hInst)
+			WandX::FreeLibrary(hInst);
+		hInst = O;
+	}
+public: // Property - Menu
+	/* R */ inline CMenu Menu(LPCSTR lpszName) const ret_as(WandX::LoadMenu(self, lpszName));
+	/* R */ inline CMenu Menu(LPCWSTR lpszName) const ret_as(WandX::LoadMenu(self, lpszName));
+	/* R */ inline CMenu Menu(WORD wID) const ret_as(WandX::LoadMenu(self, MAKEINTRESOURCE(wID)));
+public: // Property - Accelerators
+	/* R */ inline CAccel Accelerators(LPCSTR lpszName) const ret_as(WandX::LoadAccelerators(self, lpszName));
+	/* R */ inline CAccel Accelerators(LPCWSTR lpszName) const ret_as(WandX::LoadAccelerators(self, lpszName));
+	/* R */ inline CAccel Accelerators(WORD wID) const ret_as(WandX::LoadAccelerators(self, MAKEINTRESOURCE(wID)));
+public: // Property - Bitmap
+	/* R */ inline CBitmap Bitmap(LPCSTR lpszName) const ret_as(WandX::LoadBitmap(self, lpszName));
+	/* R */ inline CBitmap Bitmap(LPCWSTR lpszName) const ret_as(WandX::LoadBitmap(self, lpszName));
+	/* R */ inline CBitmap Bitmap(WORD wID) const ret_as(WandX::LoadBitmap(self, MAKEINTRESOURCE(wID)));
+public: // Property - Icon
+	/* R */ inline CIcon Icon(LPCSTR lpszName) const ret_as(WandX::LoadIcon(self, lpszName));
+	/* R */ inline CIcon Icon(LPCWSTR lpszName) const ret_as(WandX::LoadIcon(self, lpszName));
+	/* R */ inline CIcon Icon(WORD wID) const ret_as(WandX::LoadIcon(self, MAKEINTRESOURCE(wID)));
+public: // Property - Cursor
+	/* R */ inline CCursor Cursor(LPCSTR lpszName) const ret_as(WandX::LoadCursor(self, lpszName));
+	/* R */ inline CCursor Cursor(LPCWSTR lpszName) const ret_as(WandX::LoadCursor(self, lpszName));
+	/* R */ inline CCursor Cursor(WORD wID) const ret_as(WandX::LoadCursor(self, MAKEINTRESOURCE(wID)));
+public: // Property - String
+	template<bool IsUnicode = Native::IsUnicode>
+	inline StringX<IsUnicode> String(WORD wID) const {
+		if constexpr (IsUnicode)
+			 return StringW(wID);
+		else return StringA(wID);
+	}
+	inline WandX::StringA StringA(WORD wID) const {
+		auto len = StringW(wID).Length();
+		WandX::StringA str(len);
+		WandX::LoadString(self, wID, str, (int)len);
+		return right_cast(str);
+	}
+	inline const WandX::StringW StringW(WORD wID) const {
+		LPCWSTR lpString = O;
+		int len = WandX::LoadString(self, wID, (LPWSTR)&lpString, 0);
+		return CString(len, lpString);
+	}
+public: // Property - Symbol
+	template<class AnyType>
+	inline AnyType *Symbol(LPCSTR lpName) ret_as((AnyType *)::GetProcAddress(self, lpName));
+public: // Property - FileName
+	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenPath>
+	/* R */ inline StringX<IsUnicode> FileName() const {
+		StringX<IsUnicode> str(MaxLen);
+		auto len = WandX::GetModuleFileName(self, str, (int)MaxLen);
+		return right_cast(str.Resize(len));
+	}
+	template<SizeT MaxLen = MaxLenPath>
+	/* R */ inline WandX::StringA FileNameA() const ret_as(FileName<false, MaxLen>());
+	template<SizeT MaxLen = MaxLenPath>
+	/* R */ inline WandX::StringW FileNameW() const ret_as(FileName<true, MaxLen>());
+public:
+	inline operator bool() const ret_as(hInst);
+	inline operator HINSTANCE() const ret_as(hInst);
+	inline operator LPARAM() const ret_as((LPARAM)hInst);
+	inline auto &operator=(Module &m) ret_to_self(std::swap(hInst, m.hInst));
+	inline auto &operator=(Module &&m) ret_to_self(std::swap(hInst, m.hInst));
+	inline auto &operator=(const Module &m) const ret_to_self(std::swap(hInst, m.hInst));
+public:
+	static inline Module &Attach(HINSTANCE &hInst) ret_as(ref_cast<Module>(hInst));
+	static inline const Module &Attach(const HINSTANCE &hInst) ret_as(ref_cast<const Module>(hInst));
+};
+using CModule = ProxyView<Module>;
+#pragma endregion
+
+inline Bitmap ClipBitmap(const Bitmap &bmp, WandX::Rect rc) {
+	auto &&size = rc.size();
+	Bitmap nBmp = Bitmap::Create(size).BitsPerPixel(bmp.Log().BitsPerPixel());
+	DC srcDC = DC::CreateCompatible(), dstDC = DC::CreateCompatible();
+	srcDC.Select(nBmp);
+	dstDC.Select(bmp);
+	srcDC.BltBit(0, size, dstDC);
+	return nBmp;
+}
+
+//inline void SaveToFile(DC &dc, const Palette &pal, const Bitmap &bmp, File &file) {
+//	auto &&log = bmp.Log();
+//	bool usePal = log.BitsPerPixel() < 24 && pal;
+//	auto usage = usePal ? DIB_PAL_COLORS : DIB_RGB_COLORS;
+//	auto palSize = usePal ? (DWORD)std::min(pal.Size(), (SizeT)4 << log.BitsPerPixel()) : 0;
+//	BitmapHeader header;
+//	header.Size(log.Size());
+//	header.Planes(log.Planes());
+//	header.BitsPerPixel(log.BitsPerPixel());
+//	nt_assert(GetDIBits(dc, bmp, 0, log.Height(), O, header, usage));
+//	header.PaletteSize(palSize);
+//	header.ColorsSize(header.SizeImage());
+//	nt_assert(file.Write(&header, sizeof(header) - 4) == sizeof(header) - 4);
+//	nt_assert(file.Write(pal.Entries().data(), palSize) == palSize);
+//	HeapPointer<> hBits(header.SizeImage());
+//	nt_assert(GetDIBits(dc, bmp, 0, log.Height(), &hBits, header, usage));
+//	nt_assert(file.Write(&hBits, header.SizeImage()) == header.SizeImage());
+//}
+//
+//inline void SaveToFile(DC &dc, const Palette &pal, const Bitmap &bmp, File &&file) ret_to(SaveToFile(dc, pal, bmp, file));

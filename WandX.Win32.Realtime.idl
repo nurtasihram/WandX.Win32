@@ -1,0 +1,747 @@
+
+struct PTTimes { FileTime CreationTime, ExitTime, KernelTime, UserTime; };
+
+#pragma region ThreadBase
+enum_flags(ThreadAccess       , HandleAccess                     ,
+		   Resume             = THREAD_RESUME                    ,
+		   Terminate          = THREAD_TERMINATE                 ,
+		   SuspendResume      = THREAD_SUSPEND_RESUME            ,
+		   GetContext         = THREAD_GET_CONTEXT               ,
+		   SetContext         = THREAD_SET_CONTEXT               ,
+		   QueryInfo          = THREAD_QUERY_INFORMATION         ,
+		   QueryInfoLimit     = THREAD_QUERY_LIMITED_INFORMATION ,
+		   SetInfo            = THREAD_SET_INFORMATION           ,
+		   SetInfoLimit       = THREAD_SET_LIMITED_INFORMATION   ,
+		   SetToken           = THREAD_SET_THREAD_TOKEN          ,
+		   Impersonate        = THREAD_IMPERSONATE               ,
+		   ImpersonateDirect  = THREAD_DIRECT_IMPERSONATION      ,
+		   All                = THREAD_ALL_ACCESS                );
+template<class AnyChild = void>
+class ThreadBase;
+using Thread = ThreadBase<>;
+using CThread = ProxyView<Thread>;
+template<>
+class BaseOf_Waitable(ThreadBase<>) {
+	friend class Process;
+public:
+	using Super = WaitableBase<ThreadBase<>>;
+	using Access = ThreadAccess;
+protected:
+	proxy_basetype(Thread);
+	ThreadBase(HANDLE h) : Super(h) {}
+	ThreadBase(const ThreadBase &t) : Super(t.hObject) ret_to(t.hObject = O);
+public:
+	ThreadBase() {}
+	ThreadBase(Nu) {}
+	ThreadBase(ThreadBase &t) : Super(t.hObject) {}
+	ThreadBase(ThreadBase &&t) : Super(t.hObject) {}
+public:
+	template<class AnyChild = void>
+	class CreateStruct : public ChainBegin<AnyChild, CreateStruct> {
+		friend class ThreadBase;
+		LPSECURITY_ATTRIBUTES lpThreadAttributes = O;
+		SIZE_T dwStackSize = 0;
+		LPTHREAD_START_ROUTINE lpStartAddress;
+		LPVOID lpParameter;
+		DWORD dwCreationFlags = STACK_SIZE_PARAM_IS_A_RESERVATION;
+	protected:
+		CreateStruct(LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter) : lpStartAddress(lpStartAddress), lpParameter(lpParameter) {}
+		CreateStruct(const CreateStruct &) = default;
+	public:
+		inline auto &Param(LPVOID lpParameter) ret_to_child(this->lpParameter = lpParameter);
+		inline auto &Security(LPSECURITY_ATTRIBUTES lpThreadAttributes) ret_to_child(this->lpThreadAttributes = lpThreadAttributes);
+		inline auto &StackSize(SizeT dwStackSize) ret_to_child(this->dwStackSize = dwStackSize, this->dwCreationFlags &= ~STACK_SIZE_PARAM_IS_A_RESERVATION);
+		inline auto &Suspend(bool bSuspend = true) ret_to_child(this->dwCreationFlags = bSuspend ? (this->dwCreationFlags | CREATE_SUSPENDED) : (this->dwCreationFlags & ~CREATE_SUSPENDED));
+	public:
+		template<class Child>
+		inline ProxyView<ThreadBase<Child>> Create() ret_as(WandX::CreateThread(lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter, dwCreationFlags, O));
+	};
+	static inline CreateStruct<> Create(LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter = O) ret_as({ lpStartAddress, lpParameter });
+	class OpenStruct {
+		friend class ThreadBase;
+		Access dwDesiredAccess = Access::All;
+		bool bInheritHandle = false;
+		DWORD dwThreadId;
+		OpenStruct(DWORD dwThreadId) : dwThreadId(dwThreadId) {}
+	public:
+		inline auto &Accesses(Access dwDesiredAccess) ret_to_self(this->dwDesiredAccess = dwDesiredAccess);
+		inline auto &Inherit(bool bInheritHandle) ret_to_self(this->bInheritHandle = bInheritHandle);
+	public:
+		inline operator ThreadBase() const ret_as(WandX::OpenThread(dwDesiredAccess.yield(), bInheritHandle, dwThreadId));
+	};
+	static inline OpenStruct Open(DWORD dwProcessId) ret_as(dwProcessId);
+	static inline Thread Current() ret_as(WandX::GetCurrentThread());
+	static inline void Exit(DWORD dwExitCode = 0) ret_to(WandX::ExitThread(dwExitCode));
+public:
+	inline DWORD Suspend() ret_as(WandX::SuspendThread(self));
+	inline DWORD Resume() ret_as(WandX::ResumeThread(self));
+	inline void Terminate(DWORD dwExitCode = 0) ret_to(WandX::TerminateThread(this->hObject, dwExitCode));
+	template<class MsgType = UINT, class WParam = WPARAM, class LParam = LPARAM>
+	inline void Post(MsgType msgid, WParam wParam = 0, LParam lParam = 0) ret_to(WandX::PostThreadMessage<>(ID(), reuse_cast<UINT>(msgid), small_cast<WPARAM>(wParam), small_cast<LPARAM>(lParam)));
+	template<class MsgType = UINT, class WParam = WPARAM, class LParam = LPARAM>
+	inline void PostA(MsgType msgid, WParam wParam = 0, LParam lParam = 0) ret_to(WandX::PostThreadMessage<false>(ID(), reuse_cast<UINT>(msgid), small_cast<WPARAM>(wParam), small_cast<LPARAM>(lParam)));
+	template<class MsgType = UINT, class WParam = WPARAM, class LParam = LPARAM>
+	inline void PostW(MsgType msgid, WParam wParam = 0, LParam lParam = 0) ret_to(WandX::PostThreadMessage<true>(ID(), reuse_cast<UINT>(msgid), small_cast<WPARAM>(wParam), small_cast<LPARAM>(lParam)));
+#pragma region Properties
+public: // Property - ID
+	/* W */ inline DWORD ID() const ret_as(WandX::GetThreadId(self));
+public: // Property - ExitCode
+	/* W */ inline DWORD ExitCode() const ret_to(DWORD dwExitCode; WandX::GetExitCodeThread(self, &dwExitCode), dwExitCode);
+public: // Property - StillActive
+	/* W */ inline bool StillActive() const {
+		if (self)
+			if (ExitCode() == STILL_ACTIVE)
+				return !Super::Wait(0);
+		return false;
+	}
+public: // Property - ProcessID
+	/* R */ inline auto ProcessID() const ret_as(WandX::GetProcessIdOfThread(self));
+public: // Property - Times
+	/* R */ inline auto Times() ret_to(PTTimes t; WandX::GetThreadTimes(self, &t.CreationTime, &t.ExitTime, &t.KernelTime, &t.UserTime), t);
+#pragma endregion
+public:
+	using Super::operator=;
+};
+template<class AnyChild>
+class ThreadBase : public Thread, public ChainBegin<AnyChild, ThreadBase> {
+	friend class ThreadBase<>;
+public:
+	using Super = Thread;
+	using typename ChainBegin<AnyChild, ThreadBase>::Child;
+	using ChainBegin<AnyChild, ThreadBase>::__child__;
+protected:
+	proxy_basetype(ThreadBase);
+	ThreadBase(HANDLE h) : Super(h) {}
+	ThreadBase(const ThreadBase &t) : Super(t) {}
+public:
+	ThreadBase() {}
+	ThreadBase(Nu) {}
+	ThreadBase(ThreadBase &t) : Super(t) {}
+	ThreadBase(ThreadBase &&t) : Super(t) {}
+public:
+	class CreateStruct : public Thread::CreateStruct<CreateStruct> {
+	public:
+		using Super = Thread::CreateStruct<CreateStruct>;
+	protected:
+		friend class ThreadBase;
+		Child &_this;
+		CreateStruct(Child &c) : Super(_ThrProc, &c), _this(c) {}
+	public:
+		~CreateStruct() ret_to(Create());
+	public:
+		inline void Create() {
+			if (!_this) 
+				_this.hObject = Super::template Create<AnyChild>();
+		}
+	public: // Remove properties
+		inline auto &Param(LPVOID) = delete;
+	};
+	inline CreateStruct Create() retchild;
+protected: // Thread Procedure
+	use_member(OnRun);
+	static DWORD WINAPI _ThrProc(LPVOID lpChild) {
+		auto pChild = static_cast<Child *>(lpChild);
+	retry:
+		try {
+			misdef_assert(member_OnRun_of<AnyChild>::is_addressable,
+						  "Member OnRun uncallable, unexisted or undefined");
+			if constexpr (member_OnRun_of<AnyChild>::template compatible_to<DWORD()>)
+				ret_as(pChild->OnRun())
+			else {
+				misdef_assert(member_OnRun_of<AnyChild>::template compatible_to<void()>,
+							  "Member OnRun must be compatible to DWORD() or void()");
+				ret_as((pChild->OnRun(), 0L))
+			}
+		} catch (Exception err) {
+			if (Catch(pChild, err))
+				goto retry;
+			return Final(pChild, err);
+		}
+		return -2; // unreachable
+	}
+protected: // Thread Procedure Exception System
+	use_member(OnCatch);
+	static inline wx_answer Catch(Child *pChild, const Exception &err) {
+		if constexpr (member_OnCatch_of<AnyChild>::template compatible_to<wx_answer(Exception)>)
+			ret_as(pChild->OnCatch(err))
+		elif constexpr (member_OnCatch_of<AnyChild>::template compatible_to<wx_answer()>)
+			ret_as(pChild->OnCatch())
+		elif constexpr (member_OnCatch_of<AnyChild>::template compatible_to<void(Exception)>)
+			ret_as((pChild->OnCatch(err), false))
+		elif constexpr (member_OnCatch_of<AnyChild>::template compatible_to<void()>)
+			ret_as((pChild->OnCatch(), false))
+		else {
+			misdef_assert(!member_OnCatch_of<AnyChild>::is_addressable,
+						  "Member OnCatch must be compatible to wx_answer(Exception), wx_answer(), void(Exception) or void()");
+			switch (MsgBox(Q(T("Thread[PID:"), (*(ThreadBase *)pChild).ID(), T("] error")), toString(err))) {
+				case IDIGNORE:
+					wx_answer_ignore;
+				case IDRETRY:
+					wx_answer_retry;
+				case IDABORT:
+					break;
+			}
+			wx_answer_abort(err);
+		}
+	}
+	use_member(OnFinal);
+	static inline DWORD Final(Child *pChild, const Exception &err) {
+		if constexpr (member_OnFinal_of<AnyChild>::template compatible_to<DWORD(Exception)>)
+			ret_as(pChild->OnFinal(err))
+		elif constexpr (member_OnFinal_of<AnyChild>::template compatible_to<DWORD()>)
+			ret_as(pChild->OnFinal())
+		elif constexpr (member_OnFinal_of<AnyChild>::template compatible_to<void(Exception)>)
+			ret_as((pChild->OnFinal(err), -1))
+		elif constexpr (member_OnFinal_of<AnyChild>::template compatible_to<void()>)
+			ret_as((pChild->OnFinal(), -1))
+		else {
+			misdef_assert(!member_OnFinal_of<AnyChild>::is_addressable,
+						  "Member OnFinal must be compatible to DWORD(Exception), DWORD(), void(Exception), void()");
+			ret_as(-3)
+		}
+	}
+};
+class BaseOf_Thread(LThread) {
+	SFINAE_Thread(LThread);
+protected:
+	struct StartClosure {
+		virtual ~StartClosure() {}
+		virtual DWORD operator()() = 0;
+	};
+	template<class AnyCallable>
+	struct InlineStartClosure : StartClosure {
+		AnyCallable f;
+		InlineStartClosure(const AnyCallable &f) : f(f) {}
+		DWORD operator()() override {
+			if constexpr (static_compatible<AnyCallable, DWORD()>)
+				ret_as(f())
+			else {
+				misdef_assert((static_compatible<AnyCallable, void()>),
+							  "Lambda closure must be compatible to DWORD() or void()");
+				ret_as((f(), 0L))
+			}
+		}
+	};
+	StartClosure *lpStart = O;
+	inline DWORD OnRun() ret_as((*lpStart)());
+#pragma region Thread Procedure Exception System
+protected:
+	struct ExceptionClosure {
+		virtual ~ExceptionClosure() {}
+		virtual bool OnCatch(const Exception &err) = 0;
+	};
+	template<class AnyCatch>
+	struct InlineExceptionClosure : ExceptionClosure {
+		AnyCatch lOnCatch;
+		InlineExceptionClosure(const AnyCatch &lOnCatch) : lOnCatch(lOnCatch) {}
+		bool OnCatch(const Exception &err) override {
+			if constexpr (static_compatible<AnyCatch, wx_answer(Exception)>)
+				ret_as(lOnCatch(err))
+			elif constexpr (static_compatible<AnyCatch, wx_answer()>)
+				ret_as(lOnCatch())
+			elif constexpr (static_compatible<AnyCatch, void(Exception)>)
+				ret_as((lOnCatch(err), false))
+			else {
+				misdef_assert((static_compatible<AnyCatch, void()>),
+							  "Member OnCatch must be compatible to wx_answer(Exception), wx_answer(), void(Exception) or void()");
+				ret_as((lOnCatch(err), false))
+			}
+		}
+	};
+	ExceptionClosure *lpException = O;
+	inline bool OnCatch(const Exception &err) ret_as(lpException ? lpException->OnCatch(err) : false);
+public:
+	template<class AnyCatch>
+	void SetOnCatch(const AnyCatch &Catch) ret_to(lpException = new InlineExceptionClosure<AnyCatch>(Catch));
+#pragma endregion
+public:
+	template<class AnyCallable>
+	LThread(const AnyCallable &OnRun) : lpStart(new InlineStartClosure<AnyCallable>(OnRun)) {}
+	~LThread() {
+		if (StillActive())
+			Terminate();
+		if (lpStart)
+			delete lpStart,
+			lpStart = O;
+		if (lpException)
+			delete lpException,
+			lpException = O;
+	}
+};
+#pragma endregion
+
+#pragma region Environment
+template<bool IsUnicode = Native::IsUnicode>
+class EnvironmentsX {
+	using TCHAR = XCHAR<IsUnicode>;
+	using LPTCH = TCHAR *;
+	using LPCTSTR = const TCHAR *;
+	using String = StringBase<TCHAR>;
+private:
+	LPTCH lpEnv = O;
+public:
+	class Variable {
+		friend class EnvironmentsX;
+		const String name;
+		const String value;
+	public:
+		Variable() {}
+		Variable(const String &entry) {
+			LPCTSTR lpName = entry, pName = lpName;
+			while (*pName++ != '=');
+			name = +CString(pName - lpName - 1, lpName);
+			value = +CString(pName, entry.Length() - name.Length());
+		}
+		Variable(const String &name, const String &value) ret_to(this->name = name; this->value = value);
+	public: // Property - Name
+		/* W */ inline Variable &Name(const String &name) ret_to_self(this->name = name);
+		/* R */ inline const String &Name() const ret_as(this->name);
+	public: // Property - Value
+		/* W */ inline Variable &Value(const String &value) ret_to_self(this->value = value);
+		/* R */ inline const String &Value() const ret_as(this->value);
+	public: // Property - ValueExpend
+		inline String ValueExpend() const {
+			if (!value) return O;
+			auto len = WandX::ExpandEnvironmentStrings(value, O, 0);
+			if (len - 1 == value.Length()) return &value;
+			String str((SizeT)len - 1);
+			WandX::ExpandEnvironmentStrings(value, str, len);
+			return right_cast(str);
+		}
+	public:
+		inline auto &operator=(const String &value) ret_to_self(Value(value));
+		inline operator bool() const ret_as(name);
+		inline operator String() const ret_as(&Value());
+		inline String operator+() const ret_as(ValueExpend());
+		inline bool operator!=(Nu) const ret_as(name);
+		inline bool operator==(Nu) const ret_as(!name);
+	};
+protected:
+	EnvironmentsX(LPTCH lpEnv) : lpEnv(lpEnv) {}
+public:
+	EnvironmentsX() {}
+	EnvironmentsX(Nu) {}
+	EnvironmentsX(EnvironmentsX &env) : lpEnv(env.lpEnv) ret_to(env.lpEnv = O);
+	EnvironmentsX(EnvironmentsX &&env) : lpEnv(env.lpEnv) ret_to(env.lpEnv = O);
+	~EnvironmentsX() ret_to(Free());
+public:
+	static inline EnvironmentsX From(std::initializer_list<const String> envs) {
+		SizeT maxlen = 1;
+		for (const String &env : envs)
+			if (env.Length())
+				maxlen += env.Length() + 1;
+		if (maxlen <= 1) return O;
+		LPTCH lpEnv = (LPTCH)ThisHeap->Alloc(maxlen * sizeof(TCHAR)), pEnv = lpEnv;
+		for (const String &env : envs)
+			if (auto len = env.Length()) {
+				CopyMemory(pEnv, (LPCTSTR)env, len * sizeof(TCHAR));
+				pEnv += len;
+				*pEnv++ = '\0';
+			}
+		*pEnv = '\0';
+		return lpEnv;
+	}
+	static inline EnvironmentsX From(std::initializer_list<const Variable> vars) {
+		SizeT maxlen = 1;
+		for (const Variable &var : vars)
+			if (var)
+				maxlen += var.name.Length() + var.value.Length() + 2;
+		if (maxlen <= 1) return O;
+		LPTCH lpEnv = (LPTCH)ThisHeap->Alloc(maxlen * sizeof(TCHAR)), pEnv = lpEnv;
+		for (const Variable &var : vars)
+			if (var) {
+				CopyMemory(pEnv, (LPCTSTR)var.name, var.name.Length() * sizeof(TCHAR));
+				pEnv += var.name.Length();
+				*pEnv++ = '=';
+				CopyMemory(pEnv, (LPCTSTR)var.value, var.value.Length() * sizeof(TCHAR));
+				pEnv += var.value.Length();
+				*pEnv++ = '\0';
+			}
+		*pEnv = '\0';
+		return lpEnv;
+	}
+	static inline EnvironmentsX Current() ret_as(GetEnvironmentStrings<IsUnicode>());
+public:
+	inline void Free() {
+		if (lpEnv)
+			FreeEnvironmentStrings(lpEnv);
+		lpEnv = O;
+	}
+public:
+	inline void Use() const ret_to(SetEnvironmentStrings(lpEnv));
+#pragma region Properties
+public: // Property - Count
+	/* R */ inline SizeT Count() const {
+		if (!lpEnv) return 0;
+		SizeT count = 0;
+		for (auto ch = lpEnv; *ch != '\0'; ++ch) {
+			while (*ch != '\0')
+				++ch;
+			++count;
+		}
+		return count;
+	}
+public: // Property - Entries
+	template<SizeT MaxLen = MaxLenNotice>
+	/* R */ inline std::vector<String> Entries() const {
+		SizeT count = Count();
+		std::vector<String> list(count);
+		auto lpEnv = this->lpEnv;
+		for (const String &e : list)
+			lpEnv += (e = CString(lpEnv, MaxLen)).Length() + 1;
+		return list;
+	}
+public: // Property - Variables
+	template<SizeT MaxLen = MaxLenNotice>
+	/* R */ inline std::vector<Variable> Variables() const {
+		SizeT count = Count();
+		std::vector<Variable> list(count);
+		auto lpEnv = this->lpEnv;
+		for (const Variable &e : list) {
+			auto lpName = lpEnv;
+			while (*lpEnv++ != '=');
+			e.name = CString(lpEnv - lpName - 1, lpName);
+			e.value = CString(lpEnv, MaxLen);
+			lpEnv += e.value.Length() + 1;
+		}
+		return list;
+	}
+#pragma endregion
+public:
+	inline operator bool() const ret_as(lpEnv);
+	inline operator LPTCH() const ret_as(lpEnv);
+};
+using Environments = EnvironmentsX<IsUnicode>;
+using EnvironmentsA = EnvironmentsX<false>;
+using EnvironmentsW = EnvironmentsX<true>;
+class CurrentEnvironment {
+	template<class TCHAR>
+	class Variable {
+		using LPCTSTR = const TCHAR *;
+		using String = StringBase<TCHAR>;
+	private:
+		LPCTSTR lpName;
+	public:
+		Variable(LPCTSTR lpName) : lpName(lpName) {}
+	public: // Property - Value
+		/* W */ inline auto &Value(LPCTSTR lpValue) 
+			ret_to_self(WandX::SetEnvironmentVariable(lpName, lpValue));
+		/* R */ inline String Value() const {
+			auto len = WandX::GetEnvironmentVariable(lpName, O, 0);
+			String str((SizeT)len - 1);
+			WandX::SetEnvironmentVariable(lpName, str, len);
+			return right_cast(str);
+		}
+	public: // Property - Expand
+		/* R */ inline String Expand() const {
+			auto &&val = Value();
+			auto len = WandX::ExpandEnvironmentStrings(val, O, 0);
+			if (val.Length() == len) return val;
+			String str((SizeT)len - 1);
+			WandX::ExpandEnvironmentStrings(val, str, len);
+			return right_cast(str);
+		}
+	public:
+		inline auto &operator=(LPCTSTR lpValue) ret_to_self(Value(lpValue));
+		inline operator bool() const ret_as(GetEnvironmentVariable(lpName, O, 0));
+		inline operator String() const ret_as(Value());
+		inline String operator+() const ret_as(Expand());
+		inline bool operator!=(Nu) const ret_as(GetEnvironmentVariable(lpName, O, 0) != 0);
+		inline bool operator==(Nu) const ret_as(GetEnvironmentVariable(lpName, O, 0) == 0);
+	};
+public:
+///	inline operator Environments() ret_as(Environments::Current());
+//	inline void operator=(const Environments &env) ret_to(env.Use());
+	template<class TCHAR>
+	inline Variable<TCHAR> operator[](const TCHAR *lpName) ret_as(lpName);
+} inline Environment;
+#pragma endregion
+
+#pragma region Process
+enum_flags(StartupFlag       , DWORD                   ,
+		   UseShowWindow     = STARTF_USESHOWWINDOW    ,
+		   UseSize           = STARTF_USESIZE          ,
+		   UsePosition       = STARTF_USEPOSITION      ,
+		   UseCountChars     = STARTF_USECOUNTCHARS    ,
+		   UseFillAttribute  = STARTF_USEFILLATTRIBUTE ,
+		   UseStdHandles     = STARTF_USESTDHANDLES    ,
+		   UseHotKey         = STARTF_USEHOTKEY        ,
+		   RunFullScreen     = STARTF_RUNFULLSCREEN    ,
+		   ForceOnFeedback   = STARTF_FORCEONFEEDBACK  ,
+		   ForceOffFeedback  = STARTF_FORCEOFFFEEDBACK ,
+		   TitleIsLinkName   = STARTF_TITLEISLINKNAME  ,
+		   TitleIsAppID      = STARTF_TITLEISAPPID     ,
+		   PreventPinning    = STARTF_PREVENTPINNING   ,
+		   UntrustedSource   = STARTF_UNTRUSTEDSOURCE  );
+template<bool IsUnicode = Native::IsUnicode>
+class StartupInfoX : public StructShim<structx(STARTUPINFO)> {
+	using_structx(WNDCLASSEX);
+	using LPTSTR = LPXSTR<IsUnicode>;
+	using String = StringX<IsUnicode>;
+public:
+	using Super = StructShim<STARTUPINFO>;
+public:
+	StartupInfoX() ret_to(WandX::GetStartupInfo(this));
+	StartupInfoX(Nu) ret_to(self->cb = sizeof(*self));
+	StartupInfoX(const STARTUPINFO &si) : Super(si) {}
+public: // Property - Desktop
+proxy_prop_set(Desktop, lpDesktop, LPTSTR);
+	template<SizeT MaxLen = MaxLenTitle>
+ 	/* R */ inline const String Desktop() const ret_as(CString(self->lpDesktop, MaxLen));
+public: // Property - Title
+proxy_prop_set(Title, lpTitle, LPTSTR);
+	template<SizeT MaxLen = MaxLenTitle>
+	/* R */ inline const String Title() const ret_as(CString(self->lpTitle, MaxLen));
+public: // Property - Position
+	/* W */ inline auto  &Position(Point pos) ret_to_self(self->dwFlags |= STARTF_USEPOSITION, self->dwX = pos.x, self->dwY = pos.y);
+	/* R */ inline Point Position() const ret_as({ (LONG)self->dwX, (LONG)self->dwY });
+public: // Property - Size
+	/* W */ inline auto &Size(WandX::Size size) ret_to_self(self->dwFlags |= STARTF_USESIZE, self->dwXSize = size.cx, self->dwYSize = size.cy);
+	/* R */ inline WandX::Size Size() const ret_as({ (LONG)self->dwXSize, (LONG)self->dwYSize });
+public: // Property - CountCmhars
+	/* W */ inline auto &CountChars(WandX::Size size) ret_to_self(self->dwFlags |= STARTF_USECOUNTCHARS, self->dwXCountChars = size.cx, self->dwYCountChars = size.cy);
+	/* R */ inline WandX::Size CountChars() const ret_as({ (LONG)self->dwXCountChars, (LONG)self->dwYCountChars });
+public: // Property - FillAttribute
+	/* W */ inline auto &FillAttribute(DWORD dwFillAttribute) ret_to_self(self->dwFlags |= STARTF_USEFILLATTRIBUTE, self->dwFillAttribute = dwFillAttribute);
+//proxy_prop_get(FillAttribute,dwFillAttribute,auto);
+public: // Property - Flags
+	/* R */ inline StartupFlag Flags() const ret_as(reuse_cast<StartupFlag>(self->dwFlags));
+public: // Property - Show
+	/* W */ inline auto  &Show(WandX::Shows wShow) ret_to_self(self->dwFlags |= STARTF_USESHOWWINDOW, self->wShowWindow = wShow.yield());
+	/* R */ inline WandX::Shows Show() const ret_as(reuse_cast<WandX::Shows>((DWORD)self->wShowWindow));
+public: // Property - StdInput
+	/* W */ inline auto &StdInput(HANDLE hStdInput) ret_to_self(self->dwFlags |= STARTF_USESTDHANDLES, self->hStdInput = hStdInput);
+proxy_prop_get(StdInput,hStdInput, Handle);
+public: // Property - StdOutput
+	/* W */ inline auto &StdOutput(HANDLE hStdOutput) ret_to_self(self->dwFlags |= STARTF_USESTDHANDLES, self->hStdOutput = hStdOutput);
+proxy_prop_get(StdOutput,hStdOutput,Handle);
+public: // Property - StdError
+	/* W */ inline auto &StdError(HANDLE hStdError) ret_to_self(self->dwFlags |= STARTF_USESTDHANDLES, self->hStdError = hStdError);
+proxy_prop_get(StdError,hStdError, Handle);
+};
+using StartupInfo = StartupInfoX<IsUnicode>;
+using StartupInfoA = StartupInfoX<false>;
+using StartupInfoW = StartupInfoX<true>;
+enum_flags(ProcessCreateFlag            , DWORD                            ,
+		   Default                      = 0                                ,
+		   DebugProcess                 = DEBUG_PROCESS                    ,
+		   DebugOnlyThisProcess         = DEBUG_ONLY_THIS_PROCESS          ,
+		   CreateSuspended              = CREATE_SUSPENDED                 ,
+		   DetachedProcess              = DETACHED_PROCESS                 ,
+		   CreateNewConsole             = CREATE_NEW_CONSOLE               ,
+		   NormalPriorityClass          = NORMAL_PRIORITY_CLASS            ,
+		   IdlePriorityClass            = IDLE_PRIORITY_CLASS              ,
+		   HighPriorityClass            = HIGH_PRIORITY_CLASS              ,
+		   RealtimePriorityClass        = REALTIME_PRIORITY_CLASS          ,
+		   CreateNewProcessGroup        = CREATE_NEW_PROCESS_GROUP         ,
+		   CreateUnicodeEnvironment     = CREATE_UNICODE_ENVIRONMENT       ,
+		   CreateSeparateWowVdm         = CREATE_SEPARATE_WOW_VDM          ,
+		   CreateSharedWowVdm           = CREATE_SHARED_WOW_VDM            ,
+		   CreateForceDos               = CREATE_FORCEDOS                  ,
+		   BelowNormalPriorityClass     = BELOW_NORMAL_PRIORITY_CLASS      ,
+		   AboveNormalPriorityClass     = ABOVE_NORMAL_PRIORITY_CLASS      ,
+		   InheritParentAffinity        = INHERIT_PARENT_AFFINITY          ,
+		   InheritCallerPriority        = INHERIT_CALLER_PRIORITY          ,
+		   CreateProtectedProcess       = CREATE_PROTECTED_PROCESS         ,
+		   ExtendedStartupInfoPresent   = EXTENDED_STARTUPINFO_PRESENT     ,
+		   ProcessModeBackgroundBegin   = PROCESS_MODE_BACKGROUND_BEGIN    ,
+		   ProcessModeBackgroundEnd     = PROCESS_MODE_BACKGROUND_END      ,
+		   CreateSecureProcess          = CREATE_SECURE_PROCESS            ,
+		   CreateBreakawayFromJob       = CREATE_BREAKAWAY_FROM_JOB        ,
+		   CreatePreserveCodeAuthzLevel = CREATE_PRESERVE_CODE_AUTHZ_LEVEL ,
+		   CreateDefaultErrorMode       = CREATE_DEFAULT_ERROR_MODE        ,
+		   CreateNoWindow               = CREATE_NO_WINDOW                 ,
+		   ProfileUser                  = PROFILE_USER                     ,
+		   ProfileKernel                = PROFILE_KERNEL                   ,
+		   ProfileServer                = PROFILE_SERVER                   ,
+		   CreateIgnoreSystemDefault    = CREATE_IGNORE_SYSTEM_DEFAULT     );
+enum_flags(ProcessAccess            , DWORD                             ,
+		   Terminate                = PROCESS_TERMINATE                 ,
+		   CreateThread             = PROCESS_CREATE_THREAD             ,
+		   SetSessionid             = PROCESS_SET_SESSIONID             ,
+		   VmOperation              = PROCESS_VM_OPERATION              ,
+		   VmRead                   = PROCESS_VM_READ                   ,
+		   VmWrite                  = PROCESS_VM_WRITE                  ,
+		   DupHandle                = PROCESS_DUP_HANDLE                ,
+		   CreateProcess            = PROCESS_CREATE_PROCESS            ,
+		   SetQuota                 = PROCESS_SET_QUOTA                 ,
+		   SetInformation           = PROCESS_SET_INFORMATION           ,
+		   QueryInformation         = PROCESS_QUERY_INFORMATION         ,
+		   SuspendResume            = PROCESS_SUSPEND_RESUME            ,
+		   QueryLimitedInformation  = PROCESS_QUERY_LIMITED_INFORMATION ,
+		   SetLimitedInformation    = PROCESS_SET_LIMITED_INFORMATION   ,
+		   All                      = PROCESS_ALL_ACCESS                );
+class BaseOf_Waitable(Process) {
+public:
+	using Super = WaitableBase<Process>;
+	using Access = ProcessAccess;
+	using CreateFlag = ProcessCreateFlag;
+protected:
+	Process(HANDLE h) : Super(h) {}
+	Process(const Process &p) : Super(p) {}
+public:
+	Process() {}
+	Process(Nu) {}
+	Process(Process &p) : Super(p) {}
+	Process(Process &&p) : Super(p) {}
+public:
+	class CreateStruct {
+		LPCTSTR lpApplicationName;
+		mutable LPTSTR lpCommandLine;
+		LPSECURITY_ATTRIBUTES lpProcessAttributes = O;
+		LPSECURITY_ATTRIBUTES lpThreadAttributes = O;
+		bool bInheritHandles = false;
+		CreateFlag dwCreationFlags = CreateFlag::Default;
+		LPVOID lpEnvironment = O;
+		LPCTSTR lpCurrentDirectory = O;
+		StartupInfo startupInfo;
+		PROCESS_INFORMATION processInfo = { O };
+	public:
+		CreateStruct(const CreateStruct &cs) { *this = cs, cs.lpCommandLine = O; }
+		CreateStruct(LPCTSTR lpApplicationName, const String &Cmdl) : lpApplicationName(lpApplicationName), lpCommandLine(*Cmdl) {}
+		~CreateStruct() ret_to(String::AutoFree(lpCommandLine));
+	public:
+		inline auto &Security(LPSECURITY_ATTRIBUTES lpProcessAttributes) ret_to_self(this->lpProcessAttributes = lpProcessAttributes);
+		inline auto &SecurityThread(LPSECURITY_ATTRIBUTES lpThreadAttributes) ret_to_self(this->lpThreadAttributes = lpThreadAttributes);
+		inline auto &InheritHandles(bool bInheritHandles = true) ret_to_self(this->bInheritHandles = bInheritHandles);
+	public:
+		inline auto &DebugProcess() ret_to_self(this->dwCreationFlags |= CreateFlag::DebugProcess);
+		inline auto &DebugOnlyThisProcess() ret_to_self(this->dwCreationFlags |= CreateFlag::DebugOnlyThisProcess);
+		inline auto &Suspended() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateSuspended);
+		inline auto &DetachedProcess() ret_to_self(this->dwCreationFlags |= CreateFlag::DetachedProcess);
+
+		inline auto &NewConsole() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateNewConsole);
+		inline auto &NormalPriorityClass() ret_to_self(this->dwCreationFlags |= CreateFlag::NormalPriorityClass);
+		inline auto &IdlePriorityClass() ret_to_self(this->dwCreationFlags |= CreateFlag::IdlePriorityClass);
+		inline auto &HighPriorityClass() ret_to_self(this->dwCreationFlags |= CreateFlag::HighPriorityClass);
+
+		inline auto &RealtimePriorityClass() ret_to_self(this->dwCreationFlags |= CreateFlag::RealtimePriorityClass);
+		inline auto &NewProcessGroup() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateNewProcessGroup);
+		inline auto &UnicodeEnvironment() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateUnicodeEnvironment);
+		inline auto &SeparateWowVdm() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateSeparateWowVdm);
+
+		inline auto &SharedWowVdm() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateSharedWowVdm);
+		inline auto &ForceDos() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateForceDos);
+		inline auto &BelowNormalPriorityClass() ret_to_self(this->dwCreationFlags |= CreateFlag::BelowNormalPriorityClass);
+		inline auto &AboveNormalPriorityClass() ret_to_self(this->dwCreationFlags |= CreateFlag::AboveNormalPriorityClass);
+
+		inline auto &InheritParentAffinity() ret_to_self(this->dwCreationFlags |= CreateFlag::InheritParentAffinity);
+		inline auto &InheritCallerPriority() ret_to_self(this->dwCreationFlags |= CreateFlag::InheritCallerPriority);
+		inline auto &ProtectedProcess() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateProtectedProcess);
+		inline auto &ExtendedStartupInfoPresent() retself;
+
+		inline auto &ProcessModeBackgroundBegin() ret_to_self(this->dwCreationFlags |= CreateFlag::ProcessModeBackgroundBegin);
+		inline auto &ProcessModeBackgroundEnd() ret_to_self(this->dwCreationFlags |= CreateFlag::ProcessModeBackgroundEnd);
+		inline auto &SecureProcess() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateSecureProcess);
+
+		inline auto &BreakawayFromJob() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateBreakawayFromJob);
+		inline auto &PreserveCodeAuthzLevel() ret_to_self(this->dwCreationFlags |= CreateFlag::CreatePreserveCodeAuthzLevel);
+		inline auto &DefaultErrorMode() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateDefaultErrorMode);
+		inline auto &NoWindow() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateNoWindow);
+
+		inline auto &ProfileUser() ret_to_self(this->dwCreationFlags |= CreateFlag::ProfileUser);
+		inline auto &ProfileKernel() ret_to_self(this->dwCreationFlags |= CreateFlag::ProfileKernel);
+		inline auto &ProfileServer() ret_to_self(this->dwCreationFlags |= CreateFlag::ProfileServer);
+		inline auto &IgnoreSystemDefault() ret_to_self(this->dwCreationFlags |= CreateFlag::CreateIgnoreSystemDefault);
+	public:
+		inline auto &StartupInfo(const WandX::StartupInfo &si) ret_to_self(this->startupInfo = si, this->dwCreationFlags |= CreateFlag::ExtendedStartupInfoPresent);
+		inline auto &CurrentDirectory(LPCTSTR lpCurrentDirectory) ret_to_self(this->lpCurrentDirectory = lpCurrentDirectory);
+	public:
+		inline auto &Create() ret_to(CreateProcess(
+			lpApplicationName, lpCommandLine,
+			lpProcessAttributes, lpThreadAttributes, bInheritHandles,
+			dwCreationFlags.yield(), lpEnvironment, lpCurrentDirectory,
+			&startupInfo, &processInfo), processInfo);
+		inline operator Process() ret_as(processInfo.hProcess ? processInfo.hProcess : Create().hProcess);
+		inline operator Thread() ret_as(processInfo.hProcess ? processInfo.hThread : Create().hThread);
+	};
+	static inline CreateStruct Create(LPCTSTR lpApplicationName, const String &CommandLine = O) ret_as({lpApplicationName, CommandLine});
+	class OpenStruct {
+		friend class Process;
+		Access dwDesiredAccess = Access::All;
+		bool bInheritHandle = false;
+		DWORD dwProcessId;
+		OpenStruct(DWORD dwProcessId) : dwProcessId(dwProcessId) {}
+	public:
+		inline auto &Accesses(Access dwDesiredAccess) ret_to_self(this->dwDesiredAccess = dwDesiredAccess);
+		inline auto &Inherit(bool bInheritHandle = true) ret_to_self(this->bInheritHandle = bInheritHandle);
+	public:
+		inline operator Process() ret_as(OpenProcess(dwDesiredAccess.yield(), bInheritHandle, dwProcessId));
+	};
+	static inline OpenStruct Open(DWORD dwProcessId) ret_as(dwProcessId);
+	static inline Process Current() ret_as(WandX::GetCurrentProcess());
+	static inline void Exit(UINT uExitCode = 0) ret_to(WandX::ExitProcess(uExitCode));
+public:
+	inline void Terminate(UINT uExitCode = 0) {
+		if (Super::hObject)
+			TerminateProcess(Super::hObject, uExitCode);
+		Super::hObject = O;
+	}
+#pragma region Properties
+public: // Property - ExitCode
+	/* R */ inline auto ExitCode() const ret_to(DWORD dwCode; WandX::GetExitCodeProcess(self, &dwCode), dwCode);
+public: // Property - ID
+	/* R */ inline auto ID() const ret_as(WandX::GetProcessId(self));
+public: // Property - SysDPI
+	/* R */ inline UINT SysDPI() const ret_as(WandX::GetSystemDpiForProcess(self));
+public: // Property - Memory
+//	/* W */ inline auto Memory() const ret_to(PROCESS_MEMORY_COUNTERS pmc; GetProcessMemoryInfo(self, &pmc, sizeof(pmc)), pmc);
+public: // Property - Times
+	/* R */ inline auto Times() ret_to(PTTimes t; WandX::GetProcessTimes(self, &t.CreationTime, &t.ExitTime, &t.KernelTime, &t.UserTime), t);
+public: // Property - WorkingSetSize
+	/* W */ inline auto &WorkingSetSize(SIZE_T Min, SIZE_T Max) safe_ret_as_self(SetProcessWorkingSetSize(self, Min, Max));
+	/* R */ inline auto  WorkingSetSize() const safe_ret_to(struct mx_b2(SIZE_T Min, Max;) size, GetProcessWorkingSetSize(self, &size.Min, &size.Max), size);
+public: // Property - HandleCount
+	/* R */ inline DWORD HandleCount() const ret_to(DWORD dwHandleCount; GetProcessHandleCount(self, &dwHandleCount), dwHandleCount);
+public: // Property - Immersive
+	/* R */ inline bool Immersive() const ret_as(WandX::IsImmersiveProcess(self));
+#pragma endregion
+public:
+	using Super::operator=;
+};
+using CProcess = ProxyView<Process>;
+#pragma endregion
+
+// Property - CommandLine
+template<bool IsUnicode = Native::IsUnicode>
+/* R */ inline StringX<IsUnicode> CommandLine() ret_as(+CString(GetCommandLine<IsUnicode>(), 0x1ff));
+/* R */ inline StringA CommandLineA() ret_as(CommandLine<false>());
+/* R */ inline StringW CommandLineW() ret_as(CommandLine<true>());
+// Property - Directory
+template<class TCHAR>
+/* W */ inline void CurrentDirectory(const TCHAR *lpPath) ret_to(SetCurrentDirectory(lpPath));
+template<bool IsUnicode>
+/* R */ inline StringX<IsUnicode> CurrentDirectory() {
+	auto len = WandX::GetCurrentDirectory(0, (LPXSTR<IsUnicode>)O);
+	StringX<IsUnicode> str((SizeT)len);
+	WandX::GetCurrentDirectory(len, str);
+	return right_cast(str);
+}
+/* R */ inline StringA CurrentDirectoryA() ret_as(CurrentDirectory<false>());
+/* R */ inline StringW CurrentDirectoryW() ret_as(CurrentDirectory<true>());
+// Property - UserName
+template<bool IsUnicode>
+/* R */ inline StringX<IsUnicode> CurrentUserName() {
+	DWORD len = 0;
+	WandX::GetUserName((LPXSTR<IsUnicode>)O, &len);
+	StringX<IsUnicode> str((SizeT)len);
+	WandX::GetUserName(str, &len);
+	return right_cast(str);
+}
+inline StringA CurrentUserNameA() ret_as(CurrentUserName<false>());
+inline StringW CurrentUserNameW() ret_as(CurrentUserName<true>());
+// Property - ComputerName
+template<bool IsUnicode>
+/* R */ inline StringX<IsUnicode> CurrentComputerName() {
+	DWORD len = 0;
+	WandX::GetComputerName((LPXSTR<IsUnicode>)O, &len);
+	StringX<IsUnicode> str((SizeT)len);
+	WandX::GetComputerName(str, &len);
+	return right_cast(str);
+}
+/* R */ inline StringA CurrentComputerNameA() ret_as(CurrentComputerName<false>());
+/* R */ inline StringW CurrentComputerNameW() ret_as(CurrentComputerName<true>());
+// Property - ProcessID
+/* R */ inline DWORD CurrentProcessID() ret_as(GetCurrentProcessId());
+// Property - ThreadID
+/* R */ inline DWORD CurrentThreadID() ret_as(GetCurrentThreadId());

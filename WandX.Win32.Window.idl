@@ -1,0 +1,1696 @@
+
+#pragma region Atoms
+class Atom {
+	ATOM atom = 0;
+public:
+	Atom() {}
+	Atom(Nu) {}
+	Atom(LPCSTR lpString) : atom(WandX::AddAtom(lpString)) {}
+	Atom(LPCWSTR lpString) : atom(WandX::AddAtom(lpString)) {}
+	Atom(ATOM atom) : atom(atom) {}
+	~Atom() ret_to(Delete());
+public:
+	static inline Atom Find(LPCSTR lpString) ret_as(WandX::FindAtom(lpString));
+	static inline Atom Find(LPCWSTR lpString) ret_as(WandX::FindAtom(lpString));
+	inline void Delete() ret_to(if (atom) (WandX::DeleteAtom(atom), atom = 0));
+public: // Property - Name
+	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringX<IsUnicode> Name() const {
+		StringX<IsUnicode> str(MaxLen);
+		auto len = WandX::GetAtomName(self, str, (int)MaxLen);
+		return right_cast(str.Resize(len));
+	}
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringA NameA() const ret_as(Name<false, MaxLen>());
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringW NameW() const ret_as(Name<true, MaxLen>());
+public:
+	inline operator bool() const ret_as(atom);
+	inline operator ATOM() const ret_as(atom);
+	inline operator LPCSTR() const ret_as(MAKEINTRESOURCEA(atom));
+	inline operator LPCWSTR() const ret_as(MAKEINTRESOURCEW(atom));
+};
+using CAtom = ProxyView<Atom>;
+class GlobalAtom {
+	ATOM atom = 0;
+public:
+	GlobalAtom() {}
+	GlobalAtom(Nu) {}
+	GlobalAtom(LPCSTR lpString) : atom(Find(lpString)) {}
+	GlobalAtom(LPCWSTR lpString) : atom(Find(lpString)) {}
+	GlobalAtom(ATOM atom) : atom(atom) {}
+	~GlobalAtom() ret_to(Delete());
+public:
+	static inline ProxyView<GlobalAtom> Find(LPCSTR lpString) ret_as(WandX::GlobalFindAtom(lpString));
+	static inline ProxyView<GlobalAtom> Find(LPCWSTR lpString) ret_as(WandX::GlobalFindAtom(lpString));
+	inline void Delete() {
+		if (atom)
+			WandX::GlobalDeleteAtom(atom);
+		atom = 0;
+	}
+public: // Property - Name
+	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringX<IsUnicode> Name() const {
+		StringX<IsUnicode> str(MaxLen);
+		auto len = WandX::GetAtomName(self, str, (int)MaxLen);
+		return right_cast(str.Resize(len));
+	}
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringA NameA() const ret_as(Name<false, MaxLen>());
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringW NameW() const ret_as(Name<true, MaxLen>());
+public:
+	inline operator bool() const ret_as(atom);
+	inline operator ATOM() const ret_as(atom);
+	inline operator LPCSTR() const ret_as(MAKEINTRESOURCEA(atom));
+	inline operator LPCWSTR() const ret_as(MAKEINTRESOURCEW(atom));
+};
+using CGlobalAtom = ProxyView<GlobalAtom>;
+#pragma endregion
+
+#pragma region Monitor
+class MonitorInformations : public StructShim<MONITORINFO> {
+public:
+	using Super = StructShim<MONITORINFO>;
+public:
+	MonitorInformations() ret_to(self->cbSize = sizeof(MONITORINFO));
+	MonitorInformations(const MONITORINFO &mi) : Super(mi) {}
+public: // Property - Rect
+	/* W */ inline auto &Rect(const WandX::Rect &rc) ret_to_self(self->rcMonitor = rc);
+proxy_prop_get(Rect,rcMonitor,WandX::Rect);
+public: // Property - WorkRect
+	/* W */ inline auto &WorkRect(const WandX::Rect &rc) ret_to_self(self->rcWork = rc);
+proxy_prop_get(WorkRect,rcWork,WandX::Rect);
+public: // Property - Primary
+	/* W */ inline auto &Primary(bool bPrimary) ret_to_self(self->dwFlags = bPrimary ? self->dwFlags | MONITORINFOF_PRIMARY : self->dwFlags & ~MONITORINFOF_PRIMARY);
+	/* R */ inline bool  Primary() const ret_as((self->dwFlags & MONITORINFOF_PRIMARY) != 0);
+};
+using MonitorInfo = MonitorInformations;
+template<bool IsUnicode = Native::IsUnicode>
+class MonitorInformationsExX : public StructShim<structx(MONITORINFOEX)> {
+	using MONITORINFOEX = std::conditional_t<IsUnicode, MONITORINFOEXW, MONITORINFOEXA>;
+	using String = StringX<IsUnicode>;
+public:
+	using Super = StructShim<MONITORINFOEX>;
+public:
+	MonitorInformationsExX() ret_to(self->cbSize = sizeof(MONITORINFOEX));
+	MonitorInformationsExX(const MONITORINFOEX &mie) : Super(mie) {}
+public: // Property - Rect
+	/* W */ inline auto &Rect(const WandX::Rect &rc) ret_to_self(self->rcMonitor = rc);
+proxy_prop_get(Rect,rcMonitor,WandX::Rect);
+public: // Property - WorkRect
+	/* W */ inline auto &WorkRect(const WandX::Rect &rc) ret_to_self(self->rcWork = rc);
+proxy_prop_get(WorkRect,rcWork,WandX::Rect);
+public: // Property - Primary
+	/* W */ inline auto &Primary(bool bPrimary) ret_to_self(self->dwFlags = bPrimary ? self->dwFlags | MONITORINFOF_PRIMARY : self->dwFlags & ~MONITORINFOF_PRIMARY);
+	/* R */ inline bool  Primary() const ret_as((self->dwFlags &MONITORINFOF_PRIMARY) != 0);
+public: // Property - DeviceName
+	/* W */ inline auto &DeviceName(const String &name) ret_to_self(WandX::Copy(self->szDevice, name));
+	/* R */ inline String DeviceName() const ret_as(+CString(self->szDevice, ArrayCountOf(self->szDevice)));
+public:
+	inline operator MONITORINFO &() ret_as(*(MONITORINFO *)this);
+	inline operator MonitorInfo &() ret_as(*(MonitorInfo *)this);
+	inline operator MONITORINFO() const ret_as(*(MONITORINFO *)this);
+	inline operator MonitorInfo() const ret_as(*(MonitorInfo *)this);
+};
+template<bool IsUnicode = Native::IsUnicode>
+using MonitorInfoExX = MonitorInformationsExX<IsUnicode>;
+using MonitorInformationsEx = MonitorInformationsExX<>;
+using MonitorInformationsExA = MonitorInformationsExX<false>;
+using MonitorInformationsExW = MonitorInformationsExX<true>;
+using MonitorInfoEx = MonitorInformationsExX<>;
+using MonitorInfoExA = MonitorInformationsExX<false>;
+using MonitorInfoExW = MonitorInformationsExX<true>;
+class Monitor {
+	mutable HMONITOR hMonitor = O;
+protected:
+	proxy_basetype(Monitor);
+	Monitor(HMONITOR h) : hMonitor(h) {}
+	Monitor(const Monitor &m) = delete;
+public:
+	Monitor() {}
+	Monitor(Nu) {}
+public: // Property - Info
+	/* R */ inline MonitorInfo Info() const ret_to(MonitorInfo mi; WandX::GetMonitorInfo(hMonitor, &mi), mi);
+public: // Property - InfoEx
+	template<bool IsUnicode = Native::IsUnicode>
+	/* R */ inline MonitorInfoExX<IsUnicode> InfoEx() const ret_to(MonitorInfoExX<IsUnicode> mie; WandX::GetMonitorInfo<IsUnicode>(hMonitor, &mie), mie);
+	/* R */ inline MonitorInfoExA InfoExA() const ret_as(InfoEx<false>());
+	/* R */ inline MonitorInfoExW InfoExW() const ret_as(InfoEx<true>());
+public:
+	inline operator HMONITOR() const ret_as(hMonitor);
+};
+#pragma endregion
+
+#pragma region Desktop
+class Desktop {
+	mutable HDESK hDesk = O;
+protected:
+	proxy_basetype(Desktop);
+	Desktop(HDESK h) : hDesk(h) {}
+	Desktop(const Desktop &d) = delete;
+public:
+	Desktop() {}
+	Desktop(Nu) {}
+public:
+	inline operator HDESK() const ret_as(hDesk);
+};
+#pragma endregion
+
+#pragma region WindowStation
+class WindowStation {
+	mutable HWINSTA hWinSta = O;
+protected:
+	proxy_basetype(WindowStation);
+	WindowStation(HWINSTA h) : hWinSta(h) {}
+	WindowStation(const WindowStation &w) = delete;
+public:
+	WindowStation() {}
+	WindowStation(Nu) {}
+public:
+	inline operator HWINSTA() const ret_as(hWinSta);
+};
+#pragma endregion
+
+template<class AnyChild>
+class WindowBase;
+using Window = WindowBase<void>;
+using CWindow = ProxyView<Window>;
+template<class AnyChild>
+using WindowShim = ProxyView<WindowBase<AnyChild>>;
+template<class AnyChild>
+using CWindowShim = ProxyView<const WindowBase<AnyChild>>;
+
+#pragma region Misc
+
+struct KEY_FLAGS {
+	Int16U wScanCode : 8;
+	Int16U bExtend : 1;
+	Int16U ___reserved : 4;
+	Int16U bContext : 1;
+	Int16U bPrevious : 1;
+	Int16U bTranslated : 1;
+};
+
+class ScrollInfo : public StructShim<SCROLLINFO> {
+public:
+	using Super = StructShim<SCROLLINFO>;
+public:
+	ScrollInfo() ret_to(self.cbSize = sizeof(SCROLLINFO); self.fMask = SIF_ALL);
+	ScrollInfo(const SCROLLINFO &si) : Super(si) {}
+public: // Property - Mask
+	/* W */ inline auto&Mask(UINT fMask) ret_to_self(self.fMask = fMask);
+	/* R */ inline UINT Mask() const ret_as(self.fMask);
+public: // Property - Range
+	/* W */ inline auto &Range(int nMin, int nMax) ret_to_self(self.nMin = nMin, self.nMax = nMax, self.fMask = SIF_RANGE);
+	/* R */ inline WandX::Size Range() const ret_as(WandX::Size{ self.nMin, self.nMax });
+public: // Property - Page
+	/* W */ inline auto&Page(UINT nPage) ret_to_self(self.nPage = nPage, self.fMask = SIF_PAGE);
+	/* R */ inline UINT Page() const ret_as(self.nPage);
+public: // Property - Position
+	/* W */ inline auto&Position(int nPos) ret_to_self(self.nPos = nPos, self.fMask = SIF_POS);
+	/* R */ inline int  Position() const ret_as(self.nPos);
+public: // Property - TrackPosition
+	/* W */ inline auto&TrackPosition(int nTrackPos) ret_to_self(self.nTrackPos = nTrackPos, self.fMask = SIF_TRACKPOS);
+	/* R */ inline int  TrackPosition() const ret_as(self.nTrackPos);
+};
+
+enum_class(DPIHostingBehavior , DPI_HOSTING_BEHAVIOR         ,
+		   Invalid            = DPI_HOSTING_BEHAVIOR_INVALID ,
+		   Default            = DPI_HOSTING_BEHAVIOR_DEFAULT ,
+		   Mixed              = DPI_HOSTING_BEHAVIOR_MIXED   );
+
+#pragma region Window Styles
+enum_class(DisplayAffinities , DWORD                  ,
+		   None              = WDA_NONE               ,
+		   Monitor           = WDA_MONITOR            ,
+		   Exclusion         = WDA_EXCLUDEFROMCAPTURE );
+
+enum_flags(WindowStyle       , LONG                   ,
+		   Overlapped        = WS_OVERLAPPED          ,
+		   Popup             = WS_POPUP               ,
+		   Child             = WS_CHILD               ,
+		   Minimize          = WS_MINIMIZE            ,
+		   Maximize          = WS_MAXIMIZE            ,
+		   MinimizeBox       = WS_MINIMIZEBOX         ,
+		   MaximizeBox       = WS_MAXIMIZEBOX         ,
+		   SizeBox           = WS_SIZEBOX             ,
+		   Visible           = WS_VISIBLE             ,
+		   Disabled          = WS_DISABLED            ,
+		   ClipSiblings      = WS_CLIPSIBLINGS        ,
+		   ClipChildren      = WS_CLIPCHILDREN        ,
+		   Caption           = WS_CAPTION             ,
+		   Border            = WS_BORDER              ,
+		   DlgFrame          = WS_DLGFRAME            ,
+		   VScroll           = WS_VSCROLL             ,
+		   HScroll           = WS_HSCROLL             ,
+		   SysMenu           = WS_SYSMENU             ,
+		   ThickFrame        = WS_THICKFRAME          ,
+		   Group             = WS_GROUP               ,
+		   TabStop           = WS_TABSTOP             ,
+		   Tiled             = WS_TILED               ,
+		   Iconic            = WS_ICONIC              ,
+		   TiledWindow       = WS_TILEDWINDOW         ,
+		   PopupWindow       = WS_POPUPWINDOW         ,
+		   OverlappedWindow  = WS_OVERLAPPEDWINDOW    );
+alias_of_type(WS,WindowStyle);
+alias_of_type(WStyle,WindowStyle);
+enum_flags(WindowStyleEx       , DWORD                     ,
+		   No                  = 0                         ,
+		   DlgModalFrame       = WS_EX_DLGMODALFRAME       ,
+		   NoParentNotify      = WS_EX_NOPARENTNOTIFY      ,
+		   TopMost             = WS_EX_TOPMOST             ,
+		   AcceptFiles         = WS_EX_ACCEPTFILES         ,
+		   Transparent         = WS_EX_TRANSPARENT         ,
+		   MdiChild            = WS_EX_MDICHILD            ,
+		   ToolWindow          = WS_EX_TOOLWINDOW          ,
+		   WindowEdge          = WS_EX_WINDOWEDGE          ,
+		   ClientEdge          = WS_EX_CLIENTEDGE          ,
+		   ContextHelp         = WS_EX_CONTEXTHELP         ,
+		   Right               = WS_EX_RIGHT               ,
+		   Left                = WS_EX_LEFT                ,
+		   ReadingR2L          = WS_EX_RTLREADING          ,
+		   ReadingL2R          = WS_EX_LTRREADING          ,
+		   LeftScrollBar       = WS_EX_LEFTSCROLLBAR       ,
+		   RightScrollBar      = WS_EX_RIGHTSCROLLBAR      ,
+		   ControlParent       = WS_EX_CONTROLPARENT       ,
+		   StaticEdge          = WS_EX_STATICEDGE          ,
+		   AppWindow           = WS_EX_APPWINDOW           ,
+		   Layered             = WS_EX_LAYERED             ,
+		   NoInheritLayout     = WS_EX_NOINHERITLAYOUT     ,
+		   NoRedirectionBitmap = WS_EX_NOREDIRECTIONBITMAP ,
+		   LayoutR2L           = WS_EX_LAYOUTRTL           ,
+		   Composited          = WS_EX_COMPOSITED          ,
+		   NoActivate          = WS_EX_NOACTIVATE          ,
+		   OverlappedWindow    = WS_EX_OVERLAPPEDWINDOW    ,
+		   PaletteWindow       = WS_EX_PALETTEWINDOW       );
+alias_of_type(WSEX, WindowStyleEx);
+alias_of_type(WStyleEx, WindowStyleEx);
+#pragma endregion
+
+enum_flags(WindowPosFlag       , UINT               ,
+		   NoSize              = SWP_NOSIZE         ,
+		   NoMove              = SWP_NOMOVE         ,
+		   NoZOrder            = SWP_NOZORDER       ,
+		   NoRedraw            = SWP_NOREDRAW       ,
+		   NoActivate          = SWP_NOACTIVATE     ,
+		   FrameChanged        = SWP_FRAMECHANGED   ,
+		   ShowWindow          = SWP_SHOWWINDOW     ,
+		   HideWindow          = SWP_HIDEWINDOW     ,
+		   NoCopyBits          = SWP_NOCOPYBITS     ,
+		   NoOwnerZOrder       = SWP_NOOWNERZORDER  ,
+		   NoSendChanging      = SWP_NOSENDCHANGING ,
+		   DeferErase          = SWP_DEFERERASE     ,
+		   AsyncWindowPos      = SWP_ASYNCWINDOWPOS ,
+		   DrawFrame           = SWP_DRAWFRAME      ,
+		   NoReposition        = SWP_NOREPOSITION   );
+alias_of_type(SWP, WindowPosFlag);
+
+class FlashInfo : public StructShim<FLASHWINFO> {
+public:
+	using Super = StructShim<FLASHWINFO>;
+public:
+	FlashInfo(HWND hwnd = O) ret_to(self.cbSize = sizeof(cbSize); self.hwnd = hwnd);
+	FlashInfo(const FLASHWINFO &f) : Super(f) {}
+public: // Property - Window
+	/* W */ inline auto&Window(HWND hwnd) ret_to_self(self.hwnd = hwnd);
+public: // Flags
+	inline auto &Stop() ret_to_self(self.dwFlags  = FLASHW_STOP);
+	inline auto &Caption() ret_to_self(self.dwFlags |= FLASHW_CAPTION);
+	inline auto &Tray() ret_to_self(self.dwFlags |= FLASHW_TRAY);
+	inline auto &All() ret_to_self(self.dwFlags |= FLASHW_ALL);
+	inline auto &Timer() ret_to_self(self.dwFlags |= FLASHW_TIMER);
+	inline auto &TillForeground() ret_to_self(self.dwFlags |= FLASHW_TIMERNOFG);
+public: // Property - Count
+	/* W */ inline auto&Count(UINT uCount) ret_to_self(self.uCount = uCount);
+	/* R */ inline auto Count() const ret_as(self.uCount);
+public: // Property - Timeout
+	/* W */ inline auto&Timeout(DWORD dwTimeout) ret_to_self(self.dwTimeout = dwTimeout);
+	/* R */ inline auto Timeout() const ret_as(self.dwTimeout);
+};
+
+enum_flags(SysState            , DWORD                        ,
+		   Unavailable         = STATE_SYSTEM_UNAVAILABLE     ,
+		   Selected            = STATE_SYSTEM_SELECTED        ,
+		   Focused             = STATE_SYSTEM_FOCUSED         ,
+		   Pressed             = STATE_SYSTEM_PRESSED         ,
+		   Checked             = STATE_SYSTEM_CHECKED         ,
+		   Mixed               = STATE_SYSTEM_MIXED           ,
+		   Indeterminate       = STATE_SYSTEM_INDETERMINATE   ,
+		   ReadOnly            = STATE_SYSTEM_READONLY        ,
+		   HotTracked          = STATE_SYSTEM_HOTTRACKED      ,
+		   Default             = STATE_SYSTEM_DEFAULT         ,
+		   Expanded            = STATE_SYSTEM_EXPANDED        ,
+		   Collapsed           = STATE_SYSTEM_COLLAPSED       ,
+		   Busy                = STATE_SYSTEM_BUSY            ,
+		   Floating            = STATE_SYSTEM_FLOATING        ,
+		   Marqueed            = STATE_SYSTEM_MARQUEED        ,
+		   Animated            = STATE_SYSTEM_ANIMATED        ,
+		   Invisible           = STATE_SYSTEM_INVISIBLE       ,
+		   OffScreen           = STATE_SYSTEM_OFFSCREEN       ,
+		   Sizeable            = STATE_SYSTEM_SIZEABLE        ,
+		   Moveable            = STATE_SYSTEM_MOVEABLE        ,
+		   SelfVoicing         = STATE_SYSTEM_SELFVOICING     ,
+		   Focusable           = STATE_SYSTEM_FOCUSABLE       ,
+		   Selectable          = STATE_SYSTEM_SELECTABLE      ,
+		   Linked              = STATE_SYSTEM_LINKED          ,
+		   Traversed           = STATE_SYSTEM_TRAVERSED       ,
+		   MultiSelectable     = STATE_SYSTEM_MULTISELECTABLE ,
+		   ExtSelectable       = STATE_SYSTEM_EXTSELECTABLE   ,
+		   AlertLow            = STATE_SYSTEM_ALERT_LOW       ,
+		   AlertMedium         = STATE_SYSTEM_ALERT_MEDIUM    ,
+		   AlertHigh           = STATE_SYSTEM_ALERT_HIGH      ,
+		   Protected           = STATE_SYSTEM_PROTECTED       ,
+		   Valid               = STATE_SYSTEM_VALID           );
+
+class TitleBarInfo : public StructShim<TITLEBARINFO> {
+public:
+	using Super = StructShim<TITLEBARINFO>;
+public:
+	TitleBarInfo() ret_to(self.cbSize = sizeof(TITLEBARINFO));
+	TitleBarInfo(const TITLEBARINFO &t) : Super(t) {}
+public: // Property - Rect
+	/* W */ inline auto& Rect(const WandX::Rect &r) ret_to_self(self.rcTitleBar = r);
+	/* R */ inline WandX::Rect Rect() ret_as(self.rcTitleBar);
+public: // Property - TitleState
+	/* W */ inline auto&TitleState(SysState state) ret_to_self(self.rgstate[0] = state.yield());
+	/* R */ inline auto TitleState() const ret_as(reuse_cast<SysState>(self.rgstate[0]));
+public: // Property - MinButtonState
+	/* W */ inline auto&MinButtonState(SysState state) ret_to_self(self.rgstate[2] = state.yield());
+	/* R */ inline auto MinButtonState() const ret_as(reuse_cast<SysState>(self.rgstate[2]));
+public: // Property - MaxButtonState
+	/* W */ inline auto&MaxButtonState(SysState state) ret_to_self(self.rgstate[3] = state.yield());
+	/* R */ inline auto MaxButtonState() const ret_as(reuse_cast<SysState>(self.rgstate[3]));
+public: // Property - HelpButtonState
+	/* W */ inline auto&HelpButtonState(SysState state) ret_to_self(self.rgstate[4] = state.yield());
+	/* R */ inline auto HelpButtonState() const ret_as(reuse_cast<SysState>(self.rgstate[4]));
+public: // Property - CloseButtonState
+	/* W */ inline auto&CloseButtonState(SysState state) ret_to_self(self.rgstate[5] = state.yield());
+	/* R */ inline auto CloseButtonState() const ret_as(reuse_cast<SysState>(self.rgstate[5]));
+};
+
+class WindowPosition : public StructShim<WINDOWPOS> {
+public:
+	using Super = StructShim<WINDOWPOS>;
+	using Flag = WindowPosFlag;
+public:
+	WindowPosition() {}
+	WindowPosition(const WINDOWPOS &w) : Super(w) {}
+public: // Property - Window
+	/* W */ inline auto&Window(HWND hwnd) ret_as(self->hwnd = hwnd);
+	template<class AnyChild = void>
+	/* R */ inline WindowShim<AnyChild> Window() ret_as(self->hwnd);
+	template<class AnyChild = void>
+proxy_prop_get(Window,hwnd,CWindowShim<AnyChild>);
+public: // Property - WindowInsertAfter
+proxy_prop_set(WindowInsertAfter, HWND, hwndInsertAfter);
+	template<class AnyChild = void>
+	/* R */ inline WindowShim<AnyChild> WindowInsertAfter() ret_as(self->hwndInsertAfter);
+	template<class AnyChild = void>
+proxy_prop_get(WindowInsertAfter,hwndInsertAfter,CWindowShim<AnyChild>);
+public: // Property - Position
+	/* W */ inline auto  &Position(Point p) ret_to_self(self->x = p.x, self->y = p.y);
+	/* R */ inline Point Position() const ret_as({ self->x, self->y });
+public: // Property - Size
+	/* W */ inline auto &Size(WandX::Size s) ret_to_self(self->cx = s.cx, self->cy = s.cy);
+	/* R */ inline WandX::Size Size() const ret_as({ self->cx, self->cy });
+public: // Property - Rect
+	/* W */ inline auto &Rect(const WandX::Rect &r) ret_to_self(Size(r), Position(r.left_top()));
+	/* R */ inline WandX::Rect Rect() const ret_as(WandX::Rect::left_top(Position(), Size()));
+public: // Property - Flags
+	proxy_prop_set(Flags,flags,Flag);
+	/* R */ inline Flag Flags() const ret_as(reuse_cast<Flag>(self->flags));
+public:
+} ;
+using WndPos = WindowPosition;
+using WindowPos = WindowPosition;
+
+class WindowPlacement : public StructShim<WINDOWPLACEMENT> {
+public:
+	using Super = StructShim<WINDOWPLACEMENT>;
+public:
+	WindowPlacement() ret_to(self->length = sizeof(WINDOWPLACEMENT));
+public:// Property - SetMinPosition
+	/* W */ inline auto&SetMinPosition(bool bEnabled) ret_to_self(if (bEnabled) self->flags |= WPF_SETMINPOSITION; else self->flags &= ~WPF_SETMINPOSITION);
+	/* R */ inline bool SetMinPosition() const ret_as(self->flags & WPF_SETMINPOSITION);
+public:// Property - RestoreToMaximized
+	/* W */ inline auto&RestoreToMaximized(bool bEnabled) ret_to_self(if (bEnabled) self->flags |= WPF_RESTORETOMAXIMIZED; else self->flags &= ~WPF_RESTORETOMAXIMIZED);
+	/* R */ inline bool RestoreToMaximized() const ret_as(self->flags & WPF_RESTORETOMAXIMIZED);
+public:// Property - Async
+	/* W */ inline auto&Async(bool bEnabled) ret_to_self(if (bEnabled) self->flags |= WPF_ASYNCWINDOWPLACEMENT; else self->flags &= ~WPF_ASYNCWINDOWPLACEMENT);
+	/* R */ inline bool Async() const ret_as(self->flags & WPF_ASYNCWINDOWPLACEMENT);
+public: // Property - ShowFlags
+	proxy_prop_set(ShowFlags,flags,Shows);
+	/* S */ inline auto&ShowFlags() ret_as(ref_cast<Shows>(self->showCmd));
+	proxy_prop_get(ShowFlags,showCmd,Shows);
+public: // Property - MinPosition
+proxy_prop_set(MinPosition, Point, ptMinPosition);
+	/* S */ inline auto&MinPosition() ret_as(ref_cast<Point>(self->ptMinPosition));
+proxy_prop_get(MinPosition,ptMinPosition,Point);
+public: // Property - MaxPosition
+proxy_prop_set(MaxPosition, Point, ptMaxPosition);
+	/* S */ inline auto&MaxPosition() ret_as(ref_cast<Point>(self->ptMaxPosition));
+proxy_prop_get(MaxPosition,ptMaxPosition,Point);
+public: // Property - NormalPosition
+proxy_prop_set(NormalPosition, WandX::Rect, rcNormalPosition);
+	/* S */ inline auto&NormalPosition() ret_as(ref_cast<WandX::Rect>(self->rcNormalPosition));
+proxy_prop_get(NormalPosition,rcNormalPosition,WandX::Rect);
+};
+
+class WindowInformation : public StructShim<WINDOWINFO> {
+public:
+	using Super = StructShim<WINDOWINFO>;
+public:
+	WindowInformation() ret_to(self->cbSize = sizeof(WINDOWINFO));
+	proxy_prop_sync(Rect,rcWindow,WandX::Rect);
+	proxy_prop_sync(ClientRect,rcClient,WandX::Rect);
+public: // Property - Styles
+	template<class AnyFlags = WS>
+	/* R */ inline auto&Styles(AnyFlags styles) ret_to_self(self->dwStyle = styles.yield());
+	template<class AnyFlags = WS>
+	/* R */ inline AnyFlags Styles() const ret_as(reuse_cast<AnyFlags>(self->dwStyle));
+public: // Property - StylesEx
+	template<class AnyFlags = WSEX>
+	proxy_prop_set(StylesEx,styles,AnyFlags);
+	template<class AnyFlags = WSEX>
+	/* R */ inline AnyFlags StylesEx() const ret_as(reuse_cast<AnyFlags>(self->dwExStyle));
+	proxy_prop_sync(Status,dwWindowStatus,DWORD);
+public: // Property - Borders
+	/* W */ inline auto  &Borders(Point border) ret_to_self(self->cxWindowBorders = border.x, self->cyWindowBorders = border.y);
+	/* R */ inline Point Borders() const ret_as({ (LONG)self->cxWindowBorders, (LONG)self->cyWindowBorders });
+	proxy_prop_sync(ClassAtom,atomWindowType,ATOM);
+	proxy_prop_sync(CreatorVersion,wCreatorVersion,WORD);
+};
+using WindowInfo = WindowInformation;
+
+class WindowProcedure {
+	WNDPROC pfnWndProc = O;
+public:
+	WindowProcedure() {}
+	WindowProcedure(WNDPROC pfnWndProc) : pfnWndProc(pfnWndProc) {}
+public:
+	template<bool IsUnicode = Native::IsUnicode>
+	inline LRESULT Call(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) const ret_as(CallWindowProc<IsUnicode>(pfnWndProc, hWnd, Msg, wParam, lParam));
+public:
+	inline LRESULT operator()(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) const ret_as(Call(hWnd, Msg, wParam, lParam));
+public:
+	inline operator bool() const ret_as(pfnWndProc);
+	inline operator WNDPROC() const ret_as(pfnWndProc);
+};
+using WndProc = WindowProcedure;
+
+enum_flags(TrackMouseFlag , DWORD         ,
+		   Hover          = TME_HOVER     ,
+		   Leave          = TME_LEAVE     ,
+		   NoClient       = TME_NONCLIENT ,
+		   Query          = TME_QUERY     ,
+		   Cancel         = TME_CANCEL    );
+class TrackMouseEventBox : public StructShim<TRACKMOUSEEVENT> {
+public:
+	using Super = StructShim<TRACKMOUSEEVENT>;
+	using Flag = TrackMouseFlag;
+public:
+	TrackMouseEventBox(HWND hWnd) ret_to(
+		self->cbSize = sizeof(TRACKMOUSEEVENT);
+		self->hwndTrack = hWnd);
+	proxy_prop_sync(HoverTime,dwHoverTime,DWORD);
+public: // Property - Flags
+	proxy_prop_set(Flags,flag,Flag);
+	/* R */ inline Flag Flags() const ret_as(ref_cast<Flag>(self->dwFlags));
+public:
+	inline void Track() ret_to(WandX::TrackMouseEvent(this));
+};
+using TME = TrackMouseEventBox;
+
+#pragma endregion
+
+#pragma region WindowClass
+enum_flags(ClassStyle         , UINT                    ,
+		   VRedraw            = CS_VREDRAW              ,
+		   HRedraw            = CS_HREDRAW              ,
+		   Redraw             = CS_VREDRAW | CS_HREDRAW ,
+		   DoubleClick        = CS_DBLCLKS              ,
+		   OwnDC              = CS_OWNDC                ,
+		   ClassDC            = CS_CLASSDC              ,
+		   ParentDC           = CS_PARENTDC             ,
+		   NoClose            = CS_NOCLOSE              ,
+		   SaveBits           = CS_SAVEBITS             ,
+		   ByteAlignClient    = CS_BYTEALIGNCLIENT      ,
+		   ByteAlignWindow    = CS_BYTEALIGNWINDOW      ,
+		   GlobalClass        = CS_GLOBALCLASS          ,
+		   IME                = CS_IME                  ,
+		   DropShadow         = CS_DROPSHADOW           );
+using CStyle = ClassStyle;
+template<class WNDCLASS, class AnyChild>
+	requires IsSame<WNDCLASS, WNDCLASSA> || IsSame<WNDCLASS, WNDCLASSW> ||
+			 IsSame<WNDCLASS, WNDCLASSEXA> || IsSame<WNDCLASS, WNDCLASSEXW> 
+class WindowClassBase : public StructShim<WNDCLASS>,
+	public ExtendShim<WindowClassBase<WNDCLASS, AnyChild>, AnyChild> {
+	using LPCTSTR = decltype(WNDCLASS::lpszClassName);
+	using String = StringX<IsCharW<LPCTSTR>>;
+public:
+	using Super = StructShim<WNDCLASS>;
+	using Child = AnyChild;
+	using Style = CStyle;
+public:
+	WindowClassBase() {}
+	WindowClassBase(const WNDCLASS &wc) : Super(wc) {}
+public: // Property - Styles
+	/* W */ inline auto&Styles(Style style) ret_to_child(self->style = style.yield());
+	/* R */ inline auto Styles() const ret_as(ref_cast<Style>(self->style));
+public: // Property - WndProc
+	/* W */ inline auto&WndProc(WNDPROC lpfnWndProc) ret_to_child(self->lpfnWndProc = lpfnWndProc);
+proxy_prop_get(WndProc,lpfnWndProc,WandX::WndProc);
+public: // Property - ClsExtra
+	/* W */ inline auto&ClsExtra(int cbClsExtra) ret_to_child(self->cbClsExtra = cbClsExtra);
+proxy_prop_get(ClsExtra,cbClsExtra,auto);
+public: // Property - WndExtra
+	/* W */ inline auto&WndExtra(int cbWndExtra) ret_to_child(self->cbWndExtra = cbWndExtra);
+proxy_prop_get(WndExtra,cbWndExtra,auto);
+public: // Property - Module
+	/* W */ inline auto&Module(HINSTANCE hModule) ret_to_child(self->hInstance = hModule);
+proxy_prop_get(Module,hInstance,CModule);
+public: // Property - Icon
+	/* W */ inline auto&Icon(CIcon icon) ret_to_child(self->hIcon = icon);
+	/* W */ inline auto&Icon(LPCTSTR lpszName) ret_to_child(self->hIcon = Module()->Icon(lpszName));
+	/* W */ inline auto&Icon(WORD wID) ret_to_child(self->hIcon = Module()->Icon(wID));
+proxy_prop_get(Icon,hIcon,CIcon);
+public: // Property - Cursor
+	/* W */ inline auto&Cursor(CCursor cursor) ret_to_child(self->hCursor = cursor);
+	/* W */ inline auto&Cursor(LPCTSTR lpszName) ret_to_child(self->hCursor = Module()->Cursor(lpszName));
+	/* W */ inline auto&Cursor(WORD wID) ret_to_child(self->hCursor = Module()->Cursor(wID));
+proxy_prop_get(Cursor,hCursor,CCursor);
+public: // Property - Background
+	/* W */ inline auto&Background(CBrush brush) ret_to_child(self->hbrBackground = brush);
+proxy_prop_get(Background,hbrBackground,CBrush);
+public: // Property - Menu
+	/* W */ inline auto&Menu(LPCTSTR lpszMenuName) ret_to_child(self->lpszMenuName = lpszMenuName);
+	/* W */ inline auto&Menu(WORD wID) ret_to_child(self->lpszMenuName = (LPCTSTR)MAKEINTRESOURCE(wID));
+public: // Property - MenuName
+	template<SizeT MaxLen = MaxLenPath>
+	/* R */ inline const String MenuName() const ret_as(CString(self->lpszMenuName, MaxLen));
+public: // Property - Name
+	/* W */ inline auto&Name(LPCTSTR lpszClassName) ret_to_child(self->lpszClassName = lpszClassName);
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline String Name() const {
+		auto_stringx(fmt, "#%d");
+		if (!self->lpszClassName)
+			return O;
+		if (IS_INTRESOURCE(self->lpszClassName))
+			return format(fmt, (ATOM)(ULONG_PTR)self->lpszClassName);
+		return CString(self->lpszClassName, MaxLen);
+	}
+public: // Property - Atom
+	/* W */ inline auto&Atom(ATOM classAtom) ret_to_child(self->lpszClassName = (LPCTSTR)MAKEINTRESOURCE(classAtom));
+	/* R */ inline ATOM Atom() const ret_as(IS_INTRESOURCE(self->lpszClassName) ? (ATOM)(ULONG_PTR)self->lpszClassName : 0);
+public:
+	inline ATOM Register() const ret_as(WandX::RegisterClass(&self));
+	inline void Unregister() const ret_as(WandX::UnregisterClass(self->lpszClassName, self->hInstance));
+};
+template<bool IsUnicode>
+class WindowClassX : public WindowClassBase<structx(WNDCLASS), WindowClassX<IsUnicode>> {
+	using WNDCLASS = structx(WNDCLASS);
+public:
+	using Super = WindowClassBase<WNDCLASS, WindowClassX>;
+public:
+	WindowClassX() {}
+	WindowClassX(const WindowClassX &wc) : Super(wc) {}
+	WindowClassX(const WNDCLASS &wc) : Super(wc) {}
+};
+using WindowClass = WindowClassX<IsUnicode>;
+using WindowClassA = WindowClassX<false>;
+using WindowClassW = WindowClassX<true>;
+template<bool IsUnicode>
+class WindowClassExX : public WindowClassBase<structx(WNDCLASSEX), WindowClassExX<IsUnicode>> {
+	using_structx(WNDCLASSEX);
+	using LPCTSTR = LPCXSTR<IsUnicode>;
+	using String = StringX<IsUnicode>;
+public:
+	using Super = WindowClassBase<WNDCLASSEX, WindowClassExX>;
+public:
+	WindowClassExX() ret_to(self->cbSize = (int)sizeof(WNDCLASSEX));
+	WindowClassExX(const WindowClassExX &wc) : Super(wc) {}
+	WindowClassExX(const WNDCLASSEX &wc) : Super(wc) {}
+public: // Property - IconSmall
+proxy_prop_set(IconSmall, HICON, hIconSm);
+	/* W */ inline auto &IconSmall(LPCTSTR lpszName) ret_to_self(self->hIconSm = this->Module()->Icon(lpszName));
+	/* W */ inline auto &IconSmall(WORD wID) ret_to_self(self->hIconSm = this->Module()->Icon(wID));
+proxy_prop_get(IconSmall,hIconSm,CIcon);
+};
+using WindowClassEx = WindowClassExX<IsUnicode>;
+using WindowClassExA = WindowClassExX<false>;
+using WindowClassExW = WindowClassExX<true>;
+#pragma endregion
+
+#pragma region CreateStruct
+template<bool IsUnicode, class Style = WStyle, class StyleEx = WStyleEx>
+class CreateStructX : public StructShim<structx(CREATESTRUCT)> {
+	using_structx(CREATESTRUCT);
+	using_structx(WNDCLASS);
+	using_structx(WNDCLASSEX);
+	using LPCTSTR = LPCXSTR<IsUnicode>;
+	using String = StringX<IsUnicode>;
+public:
+	using Super = StructShim<CREATESTRUCT>;
+public:
+	CreateStructX() {}
+	CreateStructX(const CREATESTRUCT &cs) : Super(cs) {}
+public: // Property - Param
+proxy_prop_set(Param, LPVOID, lpCreateParams);
+	template<class AnyType = void>
+	/* R */ inline AnyType *Param() const ret_as((AnyType *)self->lpCreateParams);
+	proxy_prop(Module,hInstance,HINSTANCE,CModule);
+	proxy_prop(Menu,hMenu,HMENU,CMenu);
+public: // Property - ID
+	/* W */ inline auto &ID(UINT uID) ret_to_self(self->hMenu = small_cast<HMENU>(uID));
+	/* R */ inline UINT ID() const ret_as(small_cast<HMENU>(self->hMenu));
+public: // Property - Parent
+proxy_prop_set(Parent, HWND, hwndParent);
+	template<class AnyChild = void>
+	/* R */ inline WindowShim<AnyChild> Parent() ret_as(self->hwndParent);
+	template<class AnyChild = void>
+proxy_prop_get(Parent,hwndParent,CWindowShim<AnyChild>);
+public: // Property - Styles
+	proxy_prop_set(Styles,style,Style);
+	/* R */ inline Style Styles() const ret_as(ref_cast<Style>(self->style));
+public: // Property - Caption
+proxy_prop_set(Caption,lpszName,LPCTSTR);
+	/* R */ inline String Caption() const ret_as(CString(self->lpszName, MaxLenTitle));
+public: // Property - Class
+proxy_prop_set(Class,lpszClass,LPCTSTR);
+	/* W */ inline auto&Class(ATOM classAtom) ret_to_self(self->lpszClass = (LPCTSTR)MAKEINTRESOURCE(classAtom));
+	/* W */ inline auto&Class(const WNDCLASS &wc) ret_to_self(self->lpszClass = wc.lpszClassName);
+public: // Property - ClassName
+proxy_prop_set(ClassName,lpszClass,LPCTSTR);
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline String ClassName() const {
+		if (!self->lpszClass)
+			return O;
+		if (IS_INTRESOURCE(self->lpszClass))
+			return format("#%d", (ATOM)(ULONG_PTR)self->lpszClass);
+		return CString(self->lpszClass, MaxLen);
+	}
+public: // Property - ClassAtom
+	/* W */ inline auto&ClassAtom(ATOM classAtom) ret_to_self(self->lpszClass = (LPCTSTR)MAKEINTRESOURCE(classAtom));
+	/* R */ inline ATOM ClassAtom() const ret_as(IS_INTRESOURCE(self->lpszClass) ? (ATOM)(ULONG_PTR)self->lpszClass : 0);
+public: // Property - StylesEx
+	proxy_prop_set(StylesEx,dwExStyle,StyleEx);
+	/* R */ inline StyleEx StylesEx() const ret_as(ref_cast<StyleEx>(self->dwExStyle));
+public: // Property - Size
+	/* W */ inline auto &Size(WandX::Size size) ret_to_self(self->cx = size.cx, self->cy = size.cy);
+	/* R */ inline WandX::Size Size() const ret_as({ self->cx, self->cy });
+public: // Property - Position
+	/* W */ inline auto  &Position(Point pos) ret_to_self(self->x = pos.x, self->y = pos.y);
+	/* R */ inline Point Position() const ret_as({ self->x, self->y });
+public: // Property - Rect
+	/* W */ inline auto &Rect(WandX::Rect r) ret_to_self(Size(r), Position(r.left_top()));
+	/* R */ inline WandX::Rect Rect() const ret_as(WandX::Rect::left_top(Position(), Size()));
+public: // Property - ClientRect
+	/* W */ inline auto&ClientRect(WandX::Rect rc) ret_to_self(WandX::AdjustWindowRect(&rc, self->style, self->hMenu, self->dwExStyle), Rect(rc));
+	/* W */ inline auto&ClientRect(WandX::Rect rc, UINT dpi) ret_to_self(WandX::AdjustWindowRectForDpi(&rc, self->style, self->hMenu, self->dwExStyle, dpi), Rect(rc));
+public: // Property - ClientSize
+	/* W */ inline auto&ClientSize(WandX::Size sz) ret_as(ClientRect(WandX::Rect::left_top(Position(), sz)));
+	/* W */ inline auto&ClientSize(WandX::Size sz, UINT dpi) ret_as(ClientRect(WandX::Rect::left_top(Position(), sz), dpi));
+public:
+	template <class AnyChild = void>
+	inline WindowShim<AnyChild> Create() const ret_as(
+		WandX::CreateWindow(
+			self->dwExStyle, self->lpszClass, self->lpszName, self->style,
+			self->x, self->y, self->cx, self->cy,
+			self->hwndParent, self->hMenu, self->hInstance,
+			self->lpCreateParams));
+	template <class AnyChild = void>
+	inline WindowShim<AnyChild> CreateMDI() const ret_as(WandX::CreateMDIWindow(
+		self->dwExStyle, self->lpszClass, self->lpszName, self->style,
+		self->x, self->y, self->cx, self->cy,
+		self->hwndParent, self->hMenu, self->hInstance,
+		self->lpCreateParams));
+};
+using CreateStruct = CreateStructX<IsUnicode>;
+using CreateStructA = CreateStructX<false>;
+using CreateStructW = CreateStructX<true>;
+#pragma endregion
+
+#pragma region WindowBase
+
+#pragma region Misc
+class LayeredDisplayAffinity {
+	template<class>
+	friend class WindowBase;
+	COLORREF crKey = 0;
+	BYTE bAlpha = 0;
+	DWORD dwFlags = 0;
+public:
+	LayeredDisplayAffinity() {}
+	LayeredDisplayAffinity(Nu) {}
+	LayeredDisplayAffinity(const LayeredDisplayAffinity &) = default;
+public: // Property - Key
+	/* W */ inline auto &Key(COLORREF key) ret_to_self(crKey = key);
+	/* R */ inline RGBColor Key() const ret_as(crKey);
+public: // Property - Alpha
+	/* W */ inline auto &Alpha(BYTE alpha) ret_to_self(bAlpha = alpha);
+	/* R */ inline BYTE Alpha() const ret_as(bAlpha);
+};
+template<class TCHAR>
+class WindowIProps {
+	template<class>
+	friend class WindowBase;
+	using LPCTSTR = const TCHAR *;
+	mutable HWND hWnd;
+	mutable LPCTSTR lpString;
+private:
+	WindowIProps(HWND hWnd, LPCTSTR lpString = O) : hWnd(hWnd), lpString(lpString) {}
+	WindowIProps(const WindowIProps &) = delete;
+public:
+	WindowIProps(WindowIProps &wip) : hWnd(wip.hWnd) {}
+public:
+	inline void Remove() ret_to(WandX::RemoveProp(hWnd, lpString));
+private:
+	using FnEnumProp = Lambda<bool(HWND, LPTSTR, HANDLE)>;
+	using FnEnumPropA = Lambda<bool(HWND, LPSTR, HANDLE)>;
+	using FnEnumPropW = Lambda<bool(HWND, LPWSTR, HANDLE)>;
+private:
+	static BOOL _EnumPropA(HWND hWnd, LPSTR lpString, HANDLE hData, ULONG_PTR lParam) ret_as((*(FnEnumPropA *)lParam)(hWnd, lpString, hData));
+	static BOOL _EnumPropW(HWND hWnd, LPWSTR lpString, HANDLE hData, ULONG_PTR lParam) ret_as((*(FnEnumPropW *)lParam)(hWnd, lpString, hData));
+public:
+	template<class AnyFunc>
+	inline int Enum(AnyFunc fnEnum) {
+		if constexpr (static_compatible<AnyFunc, bool(HWND, LPSTR, HANDLE)>) {
+			FnEnumPropA fnEnumProps{
+				[&](HWND hWnd, LPSTR lpString, HANDLE hData) {
+					return fnEnum(hWnd, lpString, hData);
+				}
+			};
+			return WandX::EnumProps(hWnd, _EnumPropA, (LPARAM)std::addressof(fnEnumProps));
+		}
+		elif constexpr (static_compatible<AnyFunc, bool(HWND, LPWSTR, HANDLE)>) {
+			FnEnumPropW fnEnumProps{
+				[&](HWND hWnd, LPWSTR lpString, HANDLE hData) {
+					return fnEnum(hWnd, lpString, hData);
+				}
+			};
+			return WandX::EnumProps(hWnd, _EnumPropW, (LPARAM)std::addressof(fnEnumProps));
+		}
+		elif constexpr (static_compatible<AnyFunc, void(HWND, LPSTR, HANDLE)>) {
+			FnEnumPropA fnEnumProps{
+				[&](HWND hWnd, LPSTR lpString, HANDLE hData) {
+					fnEnum(hWnd, lpString, hData);
+					return true;
+				}
+			};
+			return WandX::EnumProps(hWnd, _EnumPropA, (LPARAM)std::addressof(fnEnumProps));
+		} else {
+			misuse_assert((static_compatible<AnyFunc, void(HWND, LPWSTR, HANDLE)>),
+						  "Enumeration function must compatible to bool(HWND, LPTSTR, HANDLE) or void(HWND, LPTSTR, HANDLE)");
+			FnEnumPropW fnEnumProps{
+				[&](HWND hWnd, LPWSTR lpString, HANDLE hData) {
+					fnEnum(hWnd, lpString, hData);
+					return true;
+				}
+			};
+			return WandX::EnumProps(hWnd, _EnumPropW, (LPARAM)std::addressof(fnEnumProps));
+		}
+	}
+public:
+	inline operator HANDLE() const ret_as(WandX::GetProp(hWnd, lpString));
+	inline void operator=(HANDLE hData) ret_as(WandX::SetProp(hWnd, lpString, hData));
+};
+class WindowIWords {
+	template<class>
+	friend class WindowBase;
+	mutable HWND hWnd;
+	mutable int nIndex;
+private:
+	WindowIWords(HWND hWnd, int nIndex) : hWnd(hWnd), nIndex(nIndex) {}
+	WindowIWords(const WindowIWords &) = delete;
+public:
+	WindowIWords(WindowIWords &wiw) : hWnd(wiw.hWnd), nIndex(wiw.nIndex) {}
+public:
+	inline operator WORD() const ret_as(WandX::GetWindowWord(hWnd, nIndex));
+	inline void operator=(WORD wNewWord) ret_to(WandX::SetWindowWord(hWnd, nIndex, wNewWord));
+};
+template<bool IsUnicode = Native::IsUnicode>
+class WindowILongsX {
+	template<class>
+	friend class WindowBase;
+	mutable HWND hWnd;
+	mutable int nIndex;
+private:
+	WindowILongsX(HWND hWnd, int nIndex) : hWnd(hWnd), nIndex(nIndex) {}
+	WindowILongsX(const WindowILongsX &) = delete;
+public:
+	WindowILongsX(WindowILongsX &wic) : hWnd(wic.hWnd), nIndex(wic.nIndex) {}
+public:
+	inline operator LONG_PTR() const ret_as(WandX::GetWindowLongPtr<IsUnicode>(hWnd, nIndex));
+	template<class AnyType>
+	inline operator AnyType() const ret_as(big_cast<AnyType>(WandX::GetWindowLongPtr<IsUnicode>(hWnd, nIndex)));
+	inline void operator=(LONG_PTR dwNewLong) ret_to(WandX::SetWindowLongPtr<IsUnicode>(hWnd, nIndex, dwNewLong));
+	template<class AnyType>
+	inline void operator=(AnyType dwNewLong) ret_to(WandX::SetWindowLongPtr<IsUnicode>(hWnd, nIndex, small_cast<LONG_PTR>(dwNewLong)));
+};
+using WindowILongs = WindowILongsX<IsUnicode>;
+using WindowILongsA = WindowILongsX<false>;
+using WindowILongsW = WindowILongsX<true>;
+template<bool IsUnicode = Native::IsUnicode>
+class WindowIClassX {
+	mutable HWND hWnd;
+	class Word {
+		friend class WindowIClassX;
+		mutable HWND hWnd;
+		mutable int nIndex;
+		Word(HWND hWnd, int nIndex) : hWnd(hWnd), nIndex(nIndex) {}
+	public:
+		inline operator WORD() const ret_as(WandX::GetClassWord(hWnd, nIndex));
+		inline void operator=(WORD word) ret_to(WandX::SetClassWord(hWnd, nIndex, word));
+	};
+	class Long {
+		friend class WindowIClassX;
+		mutable HWND hWnd;
+		mutable int nIndex;
+		Long(HWND hWnd, int nIndex) : hWnd(hWnd), nIndex(nIndex) {} 
+	public:
+		inline operator LONG_PTR() const ret_as(WandX::GetClassLongPtr<IsUnicode>(hWnd, nIndex));
+		template<class AnyType>
+		inline operator AnyType() const ret_as(big_cast<AnyType>(WandX::GetClassLongPtr<IsUnicode>(hWnd, nIndex)));
+		inline void operator=(LONG_PTR dwNewLong) ret_to(WandX::GetClassLongPtr<IsUnicode>(hWnd, nIndex, dwNewLong));
+		template<class AnyType>
+		inline void operator=(AnyType dwNewLong) ret_to(WandX::GetClassLongPtr<IsUnicode>(hWnd, nIndex, small_cast<AnyType>(dwNewLong)));
+	};
+private:
+	template<class>
+	friend class WindowBase;
+	WindowIClassX(HWND hWnd) : hWnd(hWnd) {}
+	WindowIClassX(const WindowIClassX &) = delete;
+public:
+	WindowIClassX(WindowIClassX &wic) : hWnd(wic.hWnd) {}
+public: // Property - Words
+	/* W */ inline Word Words(int nIndex) ret_as({ hWnd, nIndex });
+	/* W */ inline const Word Words(int nIndex) const ret_as({ hWnd, nIndex });
+public: // Property - Longs
+	/* W */ inline Long Longs(int nIndex) ret_as({ hWnd, nIndex });
+	/* W */ inline const Long Longs(int nIndex) const ret_as({ hWnd, nIndex });
+public: // Property - Styles
+	/* W */ inline auto&Styles(ClassStyle style) ret_to_self(Longs(GCL_STYLE) = style.yield());
+	/* R */ inline auto Styles() const ret_as((ClassStyle)Longs(GCL_STYLE));
+public: // Property - WndProc
+	/* W */ inline auto&WndProc(WNDPROC lpfnWndProc) ret_to_self(Longs(GCLP_WNDPROC) = lpfnWndProc);
+//	/* R */ inline WandX::WndProc WndProc() const ret_as({ hWnd, (WNDPROC)Longs(GCLP_WNDPROC)));
+public: // Property - ClsExtra
+	/* W */ inline auto&ClsExtra(int cbClsExtra) ret_to_self(Longs(GCL_CBCLSEXTRA) = cbClsExtra);
+	/* R */ inline auto ClsExtra() const ret_as((int)Longs(GCL_CBCLSEXTRA));
+public: // Property - WndExtra
+	/* W */ inline auto&WndExtra(int cbWndExtra) ret_to_self(Longs(GCL_CBWNDEXTRA) = cbWndExtra);
+	/* R */ inline auto WndExtra() const ret_as((int)Longs(GCL_CBWNDEXTRA));
+public: // Property - Module
+	/* W */ inline auto&Module(HINSTANCE hModule) ret_to_self(Longs(GCLP_HMODULE) = hModule);
+	/* R */ inline CModule Module() const ret_as((HMODULE)Longs(GCLP_HMODULE));
+public: // Property - Icon
+	/* W */ inline auto &Icon(CIcon icon) ret_to_self(Longs(GCLP_HICON) = icon);
+	/* R */ inline CIcon Icon() const ret_as((HICON)Longs(GCLP_HICON));
+public: // Property - Cursor
+	/* W */ inline auto   &Cursor(CCursor cursor) ret_to_self(Longs(GCLP_HCURSOR) = cursor);
+	/* R */ inline CCursor Cursor() const ret_as((HCURSOR)Longs(GCLP_HCURSOR));
+public: // Property - Background
+	/* W */ inline auto  &Background(CBrush brush) ret_to_self(Longs(GCLP_HBRBACKGROUND) = brush);
+	/* R */ inline CBrush Background() const ret_as((HBRUSH)Longs(GCLP_HBRBACKGROUND));
+public: // Property - Menu
+	/* W */ inline auto&Menu(LPCTSTR lpszName) ret_to_self(Longs(GCLP_MENUNAME) = lpszName);
+	/* W */ inline auto&Menu(WORD wID) ret_to_self(Longs(GCLP_MENUNAME) = (LPCTSTR)MAKEINTRESOURCE(wID));
+// 	template<SizeT MaxLen = MaxLenPath>
+//	/* R */ inline const String MenuName() const ret_as(CString((LPCTSTR)Longs(GCLP_MENUNAME), MaxLen));
+public: // Property - Name
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringX<IsUnicode> Name() const {
+		StringX<IsUnicode> str(MaxLen);
+		auto len = WandX::GetClassName(hWnd, str, (int)MaxLen);
+		return right_cast(str.Resize(len));
+	}
+public: // Property - Atom
+	/* W */ inline auto &Atom(ATOM classAtom) ret_to_self(Words(GCW_ATOM) = classAtom);
+	/* R */ inline CAtom Atom() const ret_as(Words(GCW_ATOM));
+public:
+	inline operator WindowClassX<IsUnicode>() const ret_to(WindowClassX<IsUnicode> wc; WandX::GetClassInfo(Module(), (ATOM)Atom(), &wc), wc);
+	inline auto&operator=(const WindowIClassX &wic) ret_to_self(hWnd = wic.hWnd);
+};
+using WindowIClass = WindowIClassX<IsUnicode>;
+using WindowIClassA = WindowIClassX<false>;
+using WindowIClassW = WindowIClassX<true>;
+#pragma endregion
+
+template<class AnyChild>
+class WindowBase : 
+	public ExtendShim<WindowBase<AnyChild>, AnyChild> {
+	template<bool, class, class>
+	friend class CreateStructX;
+	mutable HWND hWnd = O;
+public:
+	using Child = Chain<WindowBase, AnyChild>;
+	using Super = WindowBase;
+	using Shim = WindowShim<AnyChild>;
+	using Style = WStyle;
+	using StyleEx = WStyleEx;
+protected:
+	proxy_basetype(WindowBase);
+	WindowBase(HWND h) : hWnd(h) {}
+	WindowBase(const WindowBase &w) : hWnd(w.hWnd) ret_to(w.hWnd = O);
+public:
+	WindowBase(Nu) {}
+	WindowBase() {}
+	WindowBase(WindowBase &w) : hWnd(w.hWnd) ret_to(w.hWnd = O);
+	WindowBase(WindowBase &&w) : hWnd(w.hWnd) ret_to(w.hWnd = O);
+	~WindowBase() ret_to(Delete());
+public:
+	//static inline WindowShim<AnyClass> Find(LPCSTR lpName, LPCSTR lpClass) ret_as(WandX::FindWindow(lpClass, lpName));
+	//static inline WindowShim<AnyClass> Find(LPCWSTR lpName, LPCWSTR lpClass) ret_as(WandX::FindWindow(lpClass, lpName));
+	static inline Shim Find(LPCSTR lpName) ret_as(WandX::FindWindow((LPCSTR)(ULONG_PTR)WindowBase::_ClassAtom, lpName));
+	static inline Shim Find(LPCWSTR lpName) ret_as(WandX::FindWindow((LPCWSTR)(ULONG_PTR)WindowBase::_ClassAtom, lpName));
+	static inline Shim Active() ret_as(WandX::GetActiveWindow());
+	static inline Shim Desktop() ret_as(WandX::GetDesktopWindow());
+	static inline Shim Foreground() ret_as(WandX::GetForegroundWindow());
+	static inline void Foreground(HWND hWnd) ret_to(WandX::SetForegroundWindow(hWnd));
+public:
+	inline void Delete() {
+		if (self)
+			Send(WM_DESTROY);
+	}
+public: // MsgBox
+	inline int MsgBox(LPCSTR lpCaption, LPCSTR lpText = O, MB uType = MB::Ok) const ret_as(WandX::MsgBox(lpCaption, lpText, uType, self));
+	inline int MsgBox(LPCWSTR lpCaption, LPCWSTR lpText = O, MB uType = MB::Ok) const ret_as(WandX::MsgBox(lpCaption, lpText, uType, self));
+	inline int MsgBox(LPCSTR lpCaption, const Exception &err) const ret_as(WandX::MsgBox(lpCaption, err, self));
+	inline int MsgBox(LPCWSTR lpCaption, const Exception &err) const ret_as(WandX::MsgBox(lpCaption, err, self));
+public: // Show
+	inline auto&Show(Shows nShow)     ret_to_child(WandX::ShowWindow(self, nShow.yield()));
+	inline auto&Hide()             ret_as(Show(Shows::Hide));
+	inline auto&Normal()           ret_as(Show(Shows::Normal));
+	inline auto&ShowNormal()       ret_as(Show(Shows::ShowNormal));
+	inline auto&ShowMinimized()    ret_as(Show(Shows::ShowMinimized));
+	inline auto&ShowMaximized()    ret_as(Show(Shows::ShowMaximized));
+	inline auto&ShowNoActivate()   ret_as(Show(Shows::ShowNoActivate));
+	inline auto&Show()             ret_as(Show(Shows::Show));
+	inline auto&Maximize()         ret_as(Show(Shows::Maximize));
+	inline auto&Minimize()         ret_as(Show(Shows::Minimize));
+	inline auto&ForceMinimize()    ret_as(Show(Shows::ForceMinimize));
+	inline auto&ShowMinNoActive()  ret_as(Show(Shows::ShowMinNoActive));
+	inline auto&ShowDefault()      ret_as(Show(Shows::ShowDefault));
+	inline auto&ShowNA()           ret_as(Show(Shows::ShowNA));
+	inline auto&Restore()          ret_as(Show(Shows::Restore));
+	inline auto&Max()              ret_as(Show(Shows::Max));
+public: // Flash
+	inline bool Flash(bool bInvert) const ret_as(WandX::FlashWindow(self, bInvert));
+	inline bool Flash(FlashInfo fi) const ret_as(WandX::FlashWindow(&fi));
+public: // Focus
+	inline void Focus() const ret_to(SetFocus(self));
+	inline bool Focussed() const ret_as(GetFocus() == self);
+public: // Capture
+	inline void Capture() const ret_to(WandX::SetCapture(self));
+	inline bool Captured() const ret_as(WandX::GetCapture() == self);
+public: // Rect & Point
+	inline auto Screen2Client(Point pt) const ret_to(WandX::ScreenToClient(self, &pt), pt);
+	inline auto Client2Screen(Point pt) const ret_to(WandX::ClientToScreen(self, &pt), pt);
+	inline auto Log2Phy(Point pt) const ret_to(WandX::LogicalToPhysicalPoint(self, &pt), pt);
+	inline auto Phy2Log(Point pt) const ret_to(WandX::PhysicalToLogicalPoint(self, &pt), pt);
+	inline auto Logical2Physical(Point pt) const ret_to(WandX::LogicalToPhysicalPoint(self, &pt), pt);
+	inline auto Physical2Logical(Point pt) const ret_to(WandX::PhysicalToLogicalPoint(self, &pt), pt);
+	inline auto Log2PhyDPI(Point pt) const ret_to(WandX::LogicalToPhysicalPointForPerMonitorDPI(self, &pt), pt);
+	inline auto Phy2LogDPI(Point pt) const ret_to(WandX::PhysicalToLogicalPointForPerMonitorDPI(self, &pt), pt);
+	inline auto Logical2PhysicalDPI(Point pt) const ret_to(WandX::LogicalToPhysicalPointForPerMonitorDPI(self, &pt), pt);
+	inline auto Physical2LogicalDPI(Point pt) const ret_to(WandX::PhysicalToLogicalPointForPerMonitorDPI(self, &pt), pt);
+	inline auto AdjRect(WandX::Rect rc) const ret_to(WandX::AdjustWindowRect(&rc, Styles().yield(), this->Menu(), this->StylesEx().yield()), rc);
+	inline auto AdjustRect(WandX::Rect rc) const ret_to(WandX::AdjustWindowRect(&rc, Styles().yield(), this->Menu(), this->StylesEx().yield()), rc);
+	inline auto AdjRectDPI(WandX::Rect rc, UINT dpi) const ret_to(WandX::AdjustWindowRectForDpi(&rc, Styles().yield(), this->Menu(), this->StylesEx().yield(), dpi), rc);
+	inline auto AdjustRectDPI(WandX::Rect rc, UINT dpi) const ret_to(WandX::AdjustWindowRectForDpi(&rc, Styles().yield(), this->Menu(), this->StylesEx().yield(), dpi), rc);
+public: // Position
+	inline void BringToTop() const ret_to_child(WandX::BringWindowToTop(self));
+	inline void Move(WandX::Rect rc, bool bRedraw = true) const ret_to(WandX::MoveWindow(self, rc.top, rc.left, rc.xsize(), rc.ysize(), bRedraw));
+public: // Timer
+	inline auto SetTimer(UINT uElapse, UINT_PTR nIDEvent = 0, TIMERPROC lpTimerFunc = O) ret_as(WandX::SetTimer(self, nIDEvent, uElapse, lpTimerFunc));
+	inline void KillTimer(UINT_PTR nIDEvent) ret_to(WandX::KillTimer(self, nIDEvent));
+public: // Touch & Mouse
+	inline void RegisterTouch(bool bFine = true, bool bWantPalm = false) ret_to(WandX::RegisterTouchWindow(self, (bFine * TWF_FINETOUCH) | (bWantPalm * TWF_WANTPALM)));
+	inline void UnregisterTouch() ret_to(WandX::UnregisterTouchWindow(self));
+	inline TrackMouseEventBox TrackMouse() const ret_as((HWND)self);
+public: // Draw & Paint
+	inline void Update() ret_to(WandX::UpdateWindow(self));
+	inline void Validate(LPCRECT lpRect = O) const ret_to(WandX::ValidateRect(self, lpRect));
+	inline void Invalidate(LPCRECT lpRect = O, bool fErase = false) const ret_to(WandX::InvalidateRect(self, lpRect, fErase));
+	inline void LockUpdate() const ret_to(WandX::LockWindowUpdate(self));
+	//inline PaintBox BeginPaint() ret_as((HWND)self);
+public: // Child & Parent
+	inline bool HasChild(HWND hWnd) ret_as(WandX::IsChild(self, hWnd));
+public: // Message Senders
+	template<class RetType = LRESULT, class MsgType = UINT, class WParam = WPARAM, class LParam = LPARAM>
+	inline RetType Send(MsgType msgid, WParam wParam = 0, LParam lParam = 0) const ret_as(big_cast<RetType>(WandX::SendMessage(self, (UINT)(msgid), small_cast<WPARAM>(wParam), small_cast<LPARAM>(lParam))));
+	//template<class WParam = WPARAM, class LParam = LPARAM>
+	//inline auto&SendTimeout(UINT msgid, WParam wParam = 0, LParam lParam = 0) {
+	//	WandX::SendMessageTimeout(self, msgid, wParam, lParam, )
+	//}
+	template<class MsgType = UINT, class WParam = WPARAM, class LParam = LPARAM>
+	inline auto&Post(MsgType msgid, WParam wParam = 0, LParam lParam = 0) const ret_to_child(WandX::PostMessage(self, reuse_cast<UINT>(msgid), reuse_cast<WPARAM>(wParam), reuse_cast<LPARAM>(lParam)));
+
+#pragma region Enum
+public:
+	using FnEnumWindow = Lambda<bool(HWND)>;
+private:
+	static BOOL EnumWindowProc(HWND hWnd, LPARAM lParam) ret_as((*(FnEnumWindow *)lParam)(hWnd));
+public:
+	template<class AnyFunc>
+	static inline void Enum(AnyFunc fnEnum) {
+		FnEnumWindow fnEnumWindows([&](HWND hWnd) {
+			if constexpr (static_compatible<AnyFunc, bool(HWND)>)
+				return fnEnum(hWnd);
+			else {
+				misuse_assert((static_compatible<AnyFunc, void(HWND)>),
+							  "Enumeration function must compatible to bool(HWND) or void(HWND)");
+				fnEnum(hWnd);
+				return true;
+			}
+		});
+		WandX::EnumWindows(EnumWindowProc, (LPARAM)std::addressof(fnEnumWindows));
+	}
+	template<class AnyFunc>
+	inline void EnumChild(AnyFunc fnEnum) {
+		FnEnumWindow fnEnumChildren([&](HWND hWnd) {
+			if constexpr (static_compatible<AnyFunc, bool(HWND)>)
+				return fnEnum(hWnd);
+			else {
+				misuse_assert((static_compatible<AnyFunc, void(HWND)>),
+							  "Enumeration function must compatible to bool(HWND) or void(HWND)");
+				fnEnum(hWnd);
+				return true;
+			}
+		});
+		EnumChildWindows(self, EnumWindowProc, (LPARAM)std::addressof(fnEnumChildren));
+	}
+#pragma endregion
+
+#pragma region Message Procedure Reflect System
+protected: // Default Message Procedure
+	use_member(DefProc);
+	static LRESULT CallDefProc(HWND hWnd, UINT msgid, WPARAM wParam, LPARAM lParam) {
+		if constexpr (member_DefProc_of<Child>::is_addressable) {
+			misdef_assert((!std::is_member_pointer_v<decltype(&Child::DefProc)>),
+						  "DefProc must be a static method.");
+			using tfn_WndProc = LRESULT(HWND, UINT, WPARAM, LPARAM);
+			misdef_assert((member_DefProc_of<Child>::template compatible_to<tfn_WndProc>),
+						  "DefProc must be compatible to LRESULT(HWND, UINT, WPARAM, LPARAM)");
+			return Child::DefProc(hWnd, msgid, wParam, lParam);
+		}
+		else return WandX::DefWindowProc(hWnd, msgid, wParam, lParam);
+	}
+public: // Reflectors management
+	class Reflectors {
+		Child *pChild;
+	public:
+		Reflectors(Child *pChild) : pChild(pChild) {}
+#define CALL(name) pChild->On##name
+#define SEND(ret, msgid, wparam, lparam) pChild->On##name(wparam, lparam)
+#define MSG_TRANS(msgid, ret, name, argslist, args, send, call) \
+		private: use_member(On##name); \
+		public: static constexpr bool User##name = member_On##name##_of<Child>::is_addressable; \
+		inline LRESULT CallOn##name argslist { \
+			using fn_type = ret argslist; \
+			if constexpr (member_On##name##_of<Child>::template compatible_to<ret()>) \
+				if constexpr (std::is_void_v<ret>) \
+					 ret_as((pChild->On##name(), 0L)) \
+				else ret_as((LRESULT)pChild->name()) \
+			elif constexpr (member_On##name##_of<Child>::template compatible_to<LRESULT()>) \
+				ret_as(pChild->On##name()) \
+			elif constexpr (member_On##name##_of<Child>::template compatible_to<void(WPARAM, LPARAM)>) \
+				ret_as((send, 0L)) \
+			elif constexpr (member_On##name##_of<Child>::template compatible_to<LRESULT(WPARAM, LPARAM)>) \
+				ret_as(send) \
+			elif constexpr (member_On##name##_of<Child>::template compatible_to<fn_type>) { \
+				misdef_assert((member_On##name##_of<Child>::template compatible_to<fn_type>), \
+							  "Member On" #name " must be a method compatible to " #ret #argslist ", " #ret "(), void(WPARAM, LPARAM) or LRESULT(WPARAM, LPARAM)" ); \
+				ret_as(pChild->On##name args); \
+			} \
+		}
+#include "wx__msg.inl"
+	public:
+		inline operator bool() const ret_as(pChild);
+	};
+protected: // Message Procedure
+	use_member(Callback);
+	static LRESULT CALLBACK MainProc(HWND hWnd, UINT msgid, WPARAM wParam, LPARAM lParam) {
+		auto&Wnd = WindowBase::Attach(hWnd);
+		auto pChild = Wnd.UserData<Child *>();
+	retry:
+		try {
+			switch (msgid) {
+				case WM_NCCREATE: {
+					auto lpCreate = (LPCREATESTRUCT)lParam;
+					pChild = (Child *)lpCreate->lpCreateParams;
+					Wnd.UserData(pChild);
+					(*(WindowBase *)pChild).hWnd = hWnd;
+					break;
+				}
+				case WM_COMMAND:
+					if (auto wnd = ref_cast<Window>(lParam))
+						wnd.Send(WM_USER + (UINT)HIWORD(wParam));
+					break;
+			}
+			if (Reflectors ref = pChild) {
+				switch (msgid) {
+					case WM_NULL:
+						break;
+#define CALL(name) ref.CallOn##name
+#define MSG_TRANS(msgid, ret, name, argslist, args, send, call) \
+					case msgid: \
+						if constexpr (Reflectors::User##name) { \
+							return call; \
+						} break;
+#include "wx__msg.inl"
+				}
+			}
+			if constexpr (member_Callback_of<Child>::is_addressable) {
+				misdef_assert(member_Callback_of<Child>::template compatible_to<LRESULT(WPARAM, LPARAM)>, 
+							  "Member Callback must be a method compatible to LRESULT(WPARAM, LPARAM)");
+				return pChild->Callback(msgid, wParam, lParam);
+			}
+		} catch (MSG msg) {
+			if (msg.message)
+				return CallDefProc(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+		} catch (Exception err) {
+			MsgException msgErr{ err, Msg{ hWnd, msgid, wParam, lParam } };
+			if (Catch(pChild, msgErr))
+				goto retry;
+			return Final(pChild, msgErr);
+		}
+		return CallDefProc(hWnd, msgid, wParam, lParam);
+	}
+protected: // Default Message Definitions
+	inline void OnDestroy() ret_to(WandX::PostQuitMessage(0));
+protected: // Message Procedure Exception System
+	use_member(OnCatch);
+	static inline wx_answer Catch(Child *pChild, const MsgException &err) {
+		if constexpr (member_OnCatch_of<AnyChild>::template compatible_to<wx_answer(MsgException)>)
+			ret_as(pChild->OnCatch(err))
+		elif constexpr (member_OnCatch_of<AnyChild>::template compatible_to<wx_answer()>)
+			ret_as(pChild->OnCatch())
+		elif constexpr (member_OnCatch_of<AnyChild>::template compatible_to<void(MsgException)>)
+			ret_as((pChild->OnCatch(err), false))
+		elif constexpr (member_OnCatch_of<AnyChild>::template compatible_to<void()>)
+			ret_as((pChild->OnCatch(), false))
+		else {
+			misdef_assert(!member_OnCatch_of<AnyChild>::is_addressable,
+						  "Member OnCatch must be compatible to wx_answer(Exception), wx_answer(), void(MsgException) or void()");
+			switch (WandX::MsgBox(T("Window Error"), err, err.Msg().Window())) {
+				case IDRETRY:
+					wx_answer_retry;
+				case IDIGNORE:
+					wx_answer_ignore;
+				case IDABORT:
+					break;
+			}
+			wx_answer_abort(err);
+		}
+	}
+	use_member(OnFinal);
+	static inline LRESULT Final(Child *pChild, const MsgException &err) {
+		if constexpr (member_OnFinal_of<AnyChild>::template compatible_to<LRESULT(MsgException)>)
+			ret_as(pChild->OnFinal(err))
+		elif constexpr (member_OnFinal_of<AnyChild>::template compatible_to<LRESULT()>)
+			ret_as(pChild->OnFinal())
+		elif constexpr (member_OnFinal_of<AnyChild>::template compatible_to<void(MsgException)>)
+			ret_as((pChild->OnFinal(err), -1))
+		elif constexpr (member_OnFinal_of<AnyChild>::template compatible_to<void()>)
+			ret_as((pChild->OnFinal(), -1))
+		else {
+			misdef_assert(!member_OnFinal_of<AnyChild>::is_addressable,
+						  "Member OnFinal must be compatible to LRESULT(MsgException), LRESULT(), void(MsgException), void()");
+			ret_as(-3)
+		}
+	}
+public:
+	class CallPack {
+		HWND hwnd;
+	public:
+		CallPack(HWND hwnd) : hwnd(hwnd) {}
+#define SEND(ret, msgid, wparam, lparam) \
+			(ret)(CallDefProc(hwnd, msgid, wparam, lparam))
+#define MSG_TRANS(msgid, ret, name, argslist, args, send, call) \
+			inline ret name argslist ret_as(send);
+#include "wx__msg.inl"
+	};
+	inline CallPack DefProcCall() ret_as((HWND)self);
+#pragma endregion
+
+#pragma region Class Management
+protected:
+	static ATOM _ClassAtom;
+	use_member(CClassNameA);
+	use_member(CClassNameW);
+public:
+	static inline auto&CClassNameA() {
+		if constexpr (member_CClassNameA_of<AnyChild>::template compatible_to<StringA(AnyChild:: *)()>)
+			ret_as(AnyChild::CClassNameA())
+		else {
+			misdef_assert(!member_CClassNameA_of<AnyChild>::is_existed,
+						  "Member CClassNameA must be compatible to StringA()");
+			static const StringA _ClassNameA = CString(typeid(Child).name(), MaxLenClass);
+			return _ClassNameA;
+		}
+	}
+	static inline auto&CClassNameW() {
+		if constexpr (member_CClassNameW_of<AnyChild>::template compatible_to<StringW(AnyChild:: *)()>)
+			ret_as(AnyChild::CClassNameW())
+		else {
+			misdef_assert(!member_CClassNameW_of<AnyChild>::is_existed,
+						  "Member CClassNameA must be compatible to StringW()");
+			static const StringW _ClassNameW = FitsW(CClassNameA());
+			return _ClassNameW;
+		}
+	}
+	template<bool IsUnicode = Native::IsUnicode>
+	static inline auto&CClassName() {
+		if constexpr (IsUnicode)
+			 ret_as(CClassNameW())
+		else ret_as(CClassNameA())
+	}
+protected:
+	template<bool IsUnicode>
+	class XClassX : public WindowClassX<IsUnicode> {
+		using LPCTSTR = LPCXSTR<IsUnicode>;
+	public:
+		using Super = WindowClassX<IsUnicode>;
+	public:
+		XClassX() {
+			Super::WndProc(MainProc);
+			Super::Name(CClassName<IsUnicode>());
+			Super::Cursor(IDC_ARROW);
+			Super::Styles(ClassStyle::Redraw);
+			Super::Background(SysColor::Window);
+		}
+	};
+	using XClass = XClassX<IsUnicode>;
+	using XClassA = XClassX<false>;
+	using XClassW = XClassX<true>;
+protected:
+	template<bool IsUnicode>
+	class XClassExX : public WindowClassExX<IsUnicode> {
+		using LPCTSTR = LPCXSTR<IsUnicode>;
+	public:
+		using Super = WindowClassExX<IsUnicode>;
+	public:
+		XClassExX() {
+			Super::WndProc(MainProc);
+			Super::Name(CClassName<IsUnicode>());
+			Super::Cursor(IDC_ARROW);
+			Super::Styles(ClassStyle::Redraw);
+			Super::Background(SysColor::Window);
+		}
+	};
+	using XClassEx = XClassExX<IsUnicode>;
+	using XClassExA = XClassExX<false>;
+	using XClassExW = XClassExX<true>;
+private:
+	static inline const auto &DefCClass() {
+		static XClassEx _Class;
+		ret_as(_Class)
+	}
+private:
+	use_member(Register);
+	static inline ATOM DefRegister() {
+		if (_ClassAtom) return _ClassAtom;
+		return _ClassAtom = DefCClass().Register();
+	}
+public:
+	static inline auto Register() {
+		if constexpr (member_Register_of<AnyChild>::is_addressable)
+			 ret_as(AnyChild::Register())
+		else ret_as(DefRegister())
+	}
+private:
+	static inline void DefUnregister() {
+		if (_ClassAtom)
+			DefCClass().Unregister();
+		_ClassAtom = 0;
+	}
+public:
+	static inline void Unregister() {
+		if constexpr (!IsSameType(AnyChild::Unregister, Unregister))
+			 ret_as(AnyChild::Unregister())
+		elif constexpr (AnyChild::Unregister != Unregister)
+			 ret_as(AnyChild::Unregister())
+		else ret_as(DefUnregister())
+	}
+#pragma endregion
+
+#pragma region Creature Management
+protected:
+	template<bool IsUnicode, class Style = WStyle, class StyleEx = WStyleEx>
+	class CreateStructX : public WandX::CreateStructX<IsUnicode, Style, StyleEx> {
+		friend class WindowBase;
+		using_structx(CREATESTRUCT);
+		using LPCTSTR = LPCXSTR<IsUnicode>;
+	public:
+		using Super = WandX::CreateStructX<IsUnicode, Style, StyleEx>;
+	public:
+		CreateStructX(CreateStructX &cs) : Super(cs) {
+			cs.Param(O);
+		}
+		CreateStructX(Child &c, HWND hParent) {
+			Super::Parent(hParent);
+			Super::Class(Register());
+			Super::Param(std::addressof(c));
+			Super::Size(CW_USEDEFAULT);
+			Super::Position(CW_USEDEFAULT);
+			Super::Styles(WS::OverlappedWindow);
+		}
+		CreateStructX(const CREATESTRUCT &lpCreate, Child &c) : Super(lpCreate) {
+			Super::Class(Register());
+			Super::Param(std::addressof(c));
+		}
+		~CreateStructX() ret_to(AutoCreate());
+	public:
+		inline void AutoCreate() const {
+			if (auto pChild = Super::template Param<Child>(); !*pChild)
+				pChild->hWnd = Super::Create();
+		}
+		inline void AutoCreateMDI() const {
+			if (auto pChild = Super::template Param<Child>(); !*pChild)
+				pChild->hWnd = Super::CreateMDI();
+		}
+	private: // Remove properties
+		/* W */ using Super::Param;
+	public: // Deleted properties
+		/* W */ inline auto&Class(LPCTSTR) = delete;
+		/* W */ inline auto&Class(ATOM) = delete;
+	};
+	template<class Style = WStyle, class StyleEx = WStyleEx>
+	using CreateStruct = CreateStructX<IsUnicode, Style, StyleEx>;
+	template<class Style = WStyle, class StyleEx = WStyleEx>
+	using CreateStructA = CreateStructX<false, Style, StyleEx>;
+	template<class Style = WStyle, class StyleEx = WStyleEx>
+	using CreateStructW = CreateStructX<true, Style, StyleEx>;
+public:
+	inline auto Create(HWND hParent = O) ret_as(CreateStruct(child, hParent));
+	inline auto CreateA(HWND hParent = O) ret_as(CreateStructA(child, hParent));
+	inline auto CreateW(HWND hParent = O) ret_as(CreateStructW(child, hParent));
+	inline void Create(const CREATESTRUCTA &cs) ret_to(Create(CreateStructA(cs, child).Class(Register())));
+	inline void Create(const CREATESTRUCTW &cs) ret_to(Create(CreateStructW(cs, child).Class(Register())));
+	inline void Create(CreateStructA<> cs) ret_to(hWnd = cs.Param(pchild).Class(Register()).Create());
+	inline void Create(CreateStructW<> cs) ret_to(hWnd = cs.Param(pchild).Class(Register()).Create());
+	inline void Destroy() ret_to(WandX::DestroyWindow(self));
+	inline void Close() ret_to(WandX::CloseWindow(self));
+#pragma endregion
+
+#pragma region Properties
+public: // Property - Iconic
+	/* W */ inline auto&Iconic(bool bIconic) ret_to_child(if (bIconic) WandX::OpenIcon(self));
+	/* R */ inline bool Iconic() const ret_as(WandX::IsIconic(self));
+public: // Property - Zoomed
+	/* R */ inline bool Zoomed() const ret_as(WandX::IsZoomed(self));
+public: // Property - Visible
+	/* W */ inline auto&Visible(bool bVisible) ret_to_child(WandX::ShowWindow(self, bVisible ? SW_SHOW : SW_HIDE));
+	/* R */ inline bool Visible() const ret_as(WandX::IsWindowVisible(self));
+public: // Proterty - Enabled
+	/* W */ inline auto&Enabled(bool bEnable) ret_to_child(WandX::EnableWindow(self, bEnable));
+	/* R */ inline bool Enabled() const ret_as(WandX::IsWindowEnabled(self));
+public: // Property - Unicode
+	/* R */ inline bool Unicode() const ret_as(WandX::IsWindowUnicode(self));
+public: // Property - ClientRect
+	/* R */ inline WandX::Rect ClientRect() const ret_to(WandX::Rect r; WandX::GetClientRect(self, &r), r);
+public: // Property - ClientSize
+	/* R */ inline WandX::Size ClientSize() const ret_to(WandX::Rect r; WandX::GetClientRect(self, &r), r.size());
+public: // Property - Position
+	/* W */ inline auto&Position(Point ptPosition) ret_to_child(WandX::SetWindowPos(self, O, ptPosition.x, ptPosition.y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE));
+	/* R */ inline Point Position() const ret_to(WandX::Rect r; WandX::GetWindowRect(self, &r), r.left_top());
+public: // Property - Size
+	/* W */ inline auto&Size(WandX::Size szWin) ret_to_child(WandX::SetWindowPos(self, O, 0, 0, szWin.cx - 1, szWin.cy - 1, SWP_NOMOVE | SWP_NOACTIVATE));
+	/* R */ inline WandX::Size Size() const ret_to(WandX::Rect r; WandX::GetWindowRect(self, &r), r.size());
+public: // Property - Rect
+	/* W */ inline auto&Rect(WandX::Rect rWin) ret_to_child(WandX::Size sz = rWin.size(); WandX::SetWindowPos(self, O, rWin.top, rWin.left, sz.cx, sz.cy, SWP_NOZORDER | SWP_NOACTIVATE));
+	/* R */ inline WandX::Rect Rect() const ret_to(WandX::Rect r; WandX::GetWindowRect(self, &r), r);
+public: // Property - DPI
+	/* R */ inline UINT DPI() const ret_as(WandX::GetDpiForWindow(self));
+public: // Property - DPIHostingBehavior
+	/* R */ inline WandX::DPIHostingBehavior DPIHostingBehavior() const ret_as(WandX::GetWindowDpiHostingBehavior(self));
+public: // Property - Placement
+	/* W */ inline auto&Placement(const WINDOWPLACEMENT &wp) ret_to_child(WandX::SetWindowPlacement(self, &wp));
+	/* R */ inline WindowPlacement Placement() const ret_to(WindowPlacement wp; WandX::GetWindowPlacement(self, &wp), wp);
+public: // Property - Info
+	/* R */ inline WindowInfo Info() const ret_to(WindowInfo wi; WandX::GetWindowInfo(self, &wi), wi);
+public: // Property - TextLength
+	template<bool IsUnicode = Native::IsUnicode>
+	/* R */ inline int TextLength() const ret_as(WandX::GetWindowTextLength<IsUnicode>(self));
+	/* R */ inline int TextLengthA() const ret_as(TextLength<false>());
+	/* R */ inline int TextLengthW() const ret_as(TextLength<true>());
+public: // Property - String
+	/* W */ inline auto&Text(LPCSTR lpString) ret_to_child(WandX::SetWindowText(self, lpString));
+	/* W */ inline auto&Text(LPCWSTR lpString) ret_to_child(WandX::SetWindowText(self, lpString));
+	template<bool IsUnicode>
+	/* R */ inline StringX<IsUnicode> Text() const {
+		auto len = TextLength<IsUnicode>();
+		if (len <= 0) return O;
+		StringX<IsUnicode> str((SizeT)len);
+		WandX::GetWindowText(self, str, len);
+		return right_cast(str);
+	}
+	/* R */ inline StringA TextA() const ret_as(Text<false>());
+	/* R */ inline StringW TextW() const ret_as(Text<true>());
+public: // Property - ModuleFileName
+	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenPath>
+	/* R */ inline StringX<IsUnicode> ModuleFileName() const {
+		StringX<IsUnicode> str(MaxLen);
+		int len = WandX::GetWindowModuleFileName(self, str, (int)MaxLen);
+		return right_cast(str.Resize(len));
+	}
+	template<SizeT MaxLen = MaxLenPath>
+	/* R */ inline StringA ModuleFileNameA() const ret_as(ModuleFileName<false, MaxLen>());
+	template<SizeT MaxLen = MaxLenPath>
+	/* R */ inline StringW ModuleFileNameW() const ret_as(ModuleFileName<true, MaxLen>());
+public: // Property - Parent
+	/* W */ inline auto&Parent(HWND hParent) ret_to_child(WandX::SetParent(self, hParent));
+	template<class AnyClass = void>
+	/* R */ inline WindowShim<AnyClass> Parent() ret_as(WandX::GetParent(self));
+	template<class AnyClass = void>
+	/* R */ inline CWindowShim<AnyClass> Parent() const ret_as(WandX::GetParent(self));
+//public: // Property - Next
+//	template<class AnyClass = void>
+//	/* R */ inline WindowShim<AnyClass> Next() const ret_as(WandX::GetNextWindow(self, GW_HWNDNEXT));
+//public: // Property - Prev
+//	template<class AnyClass = void>
+//	/* R */ inline WindowShim<AnyClass> Prev() const ret_as(WandX::GetNextWindow(self, GW_HWNDPREV));
+public: // Property - ScrollPositionH
+	/* W */ inline auto&ScrollPositionH(int nPos) ret_to_child(WandX::SetScrollPos(self, SB_HORZ, nPos, true));
+	/* R */ inline auto ScrollPositionH() const ret_as(WandX::GetScrollPos(self, SB_HORZ));
+public: // Property - ScrollPositionV
+	/* W */ inline auto&ScrollPositionV(int nPos) ret_to_child(WandX::SetScrollPos(self, SB_VERT, nPos, true));
+	/* R */ inline auto ScrollPositionV() const ret_as(WandX::GetScrollPos(self, SB_VERT));
+public: // Property - ScrollVisible
+	/* W */ inline auto&ScrollVisible(bool bShow) ret_to_child(WandX::ShowScrollBar(self, SB_BOTH, bShow));
+public: // Property - ScrollVisibleH
+	/* W */ inline auto&ScrollVisibleH(bool bShow) ret_to_child(WandX::ShowScrollBar(self, SB_HORZ, bShow));
+public: // Property - ScrollVisibleV
+	/* W */ inline auto&ScrollVisibleV(bool bShow) ret_to_child(WandX::ShowScrollBar(self, SB_VERT, bShow));
+public: // Property - ScrollInfoH
+	/* W */ inline auto&ScrollInfoH(const SCROLLINFO &si, bool bRedraw = true) ret_to_child(WandX::SetScrollInfo(self, SB_HORZ, &si, bRedraw));
+	/* R */ inline ScrollInfo ScrollInfoH() const ret_to(ScrollInfo si; WandX::GetScrollInfo(self, SB_HORZ, &si), si);
+public: // Property - ScrollInfoV
+	/* W */ inline auto&ScrollInfoV(const SCROLLINFO &si, bool bRedraw = true) ret_to_child(WandX::SetScrollInfo(self, SB_VERT, &si, bRedraw));
+	/* R */ inline ScrollInfo ScrollInfoV() const ret_to(ScrollInfo si; WandX::GetScrollInfo(self, SB_VERT, &si), si);
+public: // Property - TitleBarInfo
+	/* W */ inline WandX::TitleBarInfo TitleBarInfo() const ret_to(WandX::TitleBarInfo tbi; WandX::GetTitleBarInfo(self, &tbi), tbi);
+public: // Property - Menu
+	/* W */ inline auto&Menu(HMENU hMenu) ret_to_child(WandX::SetMenu(self, hMenu));
+	/* R */ inline CMenu Menu() const ret_as(WandX::GetMenu(self));
+public: // Property - SysMenu
+	/* R */ inline CMenu SysMenu() const ret_as(WandX::GetSystemMenu(self, false));
+public: // Property - Region
+	/* W */ inline auto&Region(HRGN hRgn) ret_to_child(WandX::SetWindowRgn(self, hRgn, true));
+///	/* R */ inline void Region() const { WandX::GetWindowRgn() }
+public: // Property - RegionBox
+	/* R */ inline WandX::Rect RegionBox() const ret_to(WandX::Rect rc;  WandX::GetWindowRgnBox(self, &rc), rc);
+public: // Property - DisplayAffinity
+	/* W */ inline auto&DisplayAffinity(DisplayAffinities dwAffinity) ret_to_child(WandX::SetWindowDisplayAffinity(self, dwAffinity.yield()));
+	/* R */ inline auto DisplayAffinity() const ret_to(DWORD dwAffinity = 0; WandX::GetWindowDisplayAffinity(self, &dwAffinity), reuse_cast<DisplayAffinities>(dwAffinity));
+public: // Property - LayeredDisplayAffinity
+	/* W */ inline auto &LayeredDisplayAffinity(WandX::LayeredDisplayAffinity lda) ret_to_child(WandX::SetLayeredWindowAttributes(self, lda.crKey, lda.bAlpha, lda.dwFlags));
+	/* R */ inline auto LayeredDisplayAffinity() const ret_to(WandX::LayeredDisplayAffinity lda; WandX::GetLayeredWindowAttributes(self, &lda.crKey, &lda.bAlpha, &lda.dwFlags), lda);
+public: // Property - Icon
+	/* W */ inline auto&Icon(HICON hIcon) ret_to_child(Send<HICON>(WM_SETICON, ICON_BIG, hIcon));
+	/* R */ inline CIcon Icon() const ret_as(Send<HICON>(WM_GETICON, ICON_BIG));
+public: // Property - IconSmall
+	/* W */ inline auto&IconSmall(HICON hIcon) ret_to_child(Send<HICON>(WM_SETICON, ICON_SMALL, hIcon));
+	/* R */ inline CIcon IconSmall() const ret_as(Send<HICON>(WM_GETICON, ICON_SMALL));
+public: // Property - IconSmall2
+	/* W */ inline auto&IconSmall2(HICON hIcon) ret_to_child(Send<HICON>(WM_SETICON, ICON_SMALL2, hIcon));
+	/* R */ inline CIcon IconSmall2() const ret_as(Send<HICON>(WM_GETICON, ICON_SMALL2));
+#pragma region Window Extra
+public: // Property - Words
+	/* R */ inline WindowIWords Words(int nIndex) ret_as({ (HWND)self, nIndex });
+	/* R */ inline const WindowIWords Words(int nIndex) const ret_as({ (HWND)self, nIndex });
+public: // Property - Longs
+	template<bool IsUnicode = Native::IsUnicode>
+	/* R */ inline WindowILongsX<IsUnicode> Longs(int nIndex) ret_as({ (HWND)self, nIndex });
+	/* R */ inline WindowILongsA LongsA(int nIndex) ret_as({ (HWND)self, nIndex });
+	/* R */ inline WindowILongsW LongsW(int nIndex) ret_as({ (HWND)self, nIndex });
+	template<bool IsUnicode = Native::IsUnicode>
+	/* R */ inline const WindowILongsX<IsUnicode> Longs(int nIndex) const ret_as({ (HWND)self, nIndex });
+	/* R */ inline const WindowILongsA LongsA(int nIndex) const ret_as({ (HWND)self, nIndex });
+	/* R */ inline const WindowILongsW LongsW(int nIndex) const ret_as({ (HWND)self, nIndex });
+public: // Property - WndProc
+	/* W */ inline auto&WndProc(WNDPROC lpfnWndProc) ret_to_child(Longs(GWLP_WNDPROC) = lpfnWndProc);
+	/* R */ inline WandX::WndProc WndProc() const ret_as((WandX::WndProc)Longs(GWLP_WNDPROC));
+public: // Property - Module
+	/* W */ inline auto&Module(HINSTANCE hInstance) ret_to_child(Longs(GWLP_HINSTANCE) = hInstance);
+	/* R */ inline CModule Module() const ret_as((HINSTANCE)Longs(GWLP_HINSTANCE));
+public: // Property - HwndParent
+	/* W */ inline auto&HwndParent(HWND hHwndParent) ret_to_child(Longs(GWLP_HWNDPARENT) = hHwndParent);
+	template<class AnyClass = void>
+	/* R */ inline WindowShim<AnyClass> HwndParent() ret_as(Longs(GWLP_HWNDPARENT));
+	template<class AnyClass = void>
+	/* R */ inline CWindowShim<AnyClass> HwndParent() const ret_as(Longs(GWLP_HWNDPARENT));
+public: // Property - Styles
+	/* W */ inline auto&Styles(Style style) ret_to_child(Longs(GWL_STYLE) = style);
+	/* R */ inline Style Styles() const ret_as((Style)Longs(GWL_STYLE));
+public: // Property - StylesEx 
+	/* W */ inline auto&StylesEx(StyleEx styleEx) ret_to_child(Longs(GWL_EXSTYLE) = styleEx);
+	/* R */ inline StyleEx StylesEx() const ret_as((StyleEx)Longs(GWL_EXSTYLE));
+public: // Property - UserData
+	template<class AnyType = LONG_PTR>
+	/* W */ inline auto&UserData(AnyType data) ret_to_child(Longs(GWLP_USERDATA) = data);
+	template<class AnyType = LONG_PTR>
+	/* R */ inline AnyType UserData() const ret_as((AnyType)Longs(GWLP_USERDATA));
+public: // Property - ID
+	/* W */ inline auto&ID(LONG_PTR uId) ret_to_child(Longs(GWLP_ID) = uId);
+	/* R */ inline LONG_PTR ID() const ret_as(Longs(GWLP_ID));
+#pragma endregion
+public: // Property - Class
+	template<bool IsUnicode = Native::IsUnicode>
+	/* R */ inline WindowIClassX<IsUnicode> Class() ret_as(hWnd);
+	/* R */ inline WindowIClassA ClassA() retself;
+	/* R */ inline WindowIClassW ClassW() retself;
+	template<bool IsUnicode = Native::IsUnicode>
+	/* R */ inline const WindowIClassX<IsUnicode> Class() const retself;
+	/* R */ inline const WindowIClassA ClassA() const retself;
+	/* R */ inline const WindowIClassW ClassW() const retself;
+public: // Property - DC
+	/* R */ inline CDC DC() const ret_as(WandX::GetDC(self));
+public: // Property - ContextHelpID
+	/* W */ inline auto &ContextHelpID(DWORD dwContextHelpID) ret_to_child(WandX::SetWindowContextHelpId(self, dwContextHelpID));
+	/* R */ inline DWORD ContextHelpID() const ret_as(WandX::GetWindowContextHelpId(self));
+public: // Property - ProcessID
+	/* R */ inline DWORD ProcessID() const ret_to(DWORD dwProcessId = 0; WandX::GetWindowThreadProcessId(self, &dwProcessId), dwProcessId);
+public: // Property - ThreadID
+	/* R */ inline DWORD ThreadID() const ret_as(WandX::GetWindowThreadProcessId(self, O));
+//public: // Property - Prop
+//	/* W */ inline auto&Prop(ATOM globalAtom, HANDLE hData) safe_ret_as_child(SetProp(self, MAKEINTATOM(globalAtom), hData));
+//	/* W */ inline auto&Prop(LPCSTR lpString, HANDLE hData) safe_ret_as_child(SetPropA(self, lpString, hData));
+//	/* W */ inline auto&Prop(LPCWSTR lpString, HANDLE hData) safe_ret_as_child(SetPropW(self, lpString, hData));
+//	/* R */ inline HANDLE Prop(ATOM globalAtom) const ret_safe_to(auto hData = GetProp(self, MAKEINTATOM(globalAtom)), hData);
+//	/* R */ inline HANDLE Prop(LPCSTR lpString) const safe_ret_to(auto hData = GetPropA(self, lpString), hData);
+//	/* R */ inline HANDLE Prop(LPCWSTR lpString) const safe_ret_to(auto hData = GetPropW(self, lpString), hData);
+#pragma endregion
+
+public:
+	inline operator bool() const ret_as(WandX::IsWindow(hWnd));
+	inline operator HWND() const ret_as(hWnd);
+	inline AnyChild *operator&() ret_as(UserData<AnyChild *>());
+	inline AnyChild *operator->() ret_as(UserData<AnyChild *>());
+	inline const AnyChild *operator&() const ret_as(UserData<const AnyChild *>());
+	inline const AnyChild *operator->() const ret_as(UserData<const AnyChild *>());
+	inline auto&operator=(WindowBase &w) ret_to_child(std::swap(this->hWnd, w.hWnd));
+	inline auto&operator=(const WindowBase &w) const ret_to_child(std::swap(this->hWnd, w.hWnd));
+public:
+	static inline Window &Attach(HWND &hWnd) ret_as(ref_cast<Window>(hWnd));
+};
+template<class AnyChild, class SubXCreate, class Style, class StyleEx>
+using WXCreate = typename WindowBase<AnyChild>::template XCreate<SubXCreate, Style, StyleEx>;
+template<class AnyChild> ATOM WindowBase<AnyChild>::_ClassAtom = 0;
+#pragma endregion
+
+#pragma region Clipboard
+
+enum_class(ClipboardStandardFormats , UINT            ,
+		   Text                     = CF_TEXT         ,
+		   Bitmap                   = CF_BITMAP       ,
+		   MetafilePict             = CF_METAFILEPICT ,
+		   Sylk                     = CF_SYLK         ,
+		   Dif                      = CF_DIF          ,
+		   Tiff                     = CF_TIFF         ,
+		   OemText                  = CF_OEMTEXT      ,
+		   Dib                      = CF_DIB          ,
+		   Palette                  = CF_PALETTE      ,
+		   PenData                  = CF_PENDATA      ,
+		   Riff                     = CF_RIFF         ,
+		   Wave                     = CF_WAVE         ,
+		   UnicodeText              = CF_UNICODETEXT  ,
+		   EnhMetaFile              = CF_ENHMETAFILE  ,
+		   HDrop                    = CF_HDROP        ,
+		   Locale                   = CF_LOCALE       ,
+		   BitmapV5Header           = CF_DIBV5        );
+
+class ClipboardIFormat {
+	mutable UINT uFormat;
+protected:
+	ClipboardIFormat(UINT uFormat) : uFormat(uFormat) {}
+	ClipboardIFormat(const ClipboardIFormat &f) : uFormat(f.uFormat) {}
+public:
+	ClipboardIFormat(ClipboardIFormat &f) : uFormat(f.uFormat) {}
+	ClipboardIFormat(ClipboardIFormat &&f) : uFormat(f.uFormat) {}
+public:
+	//inline void Register() const ret_to(WandX::RegisterClipboardFormat(uFormat));
+	inline bool Available() const ret_as(WandX::IsClipboardFormatAvailable(uFormat));
+	inline ClipboardIFormat Next() ret_as(WandX::EnumClipboardFormats(uFormat));
+	//inline void AddListener(HWND hwnd) ret_to(WandX::AddClipboardFormatListener(hwnd));
+	//inline void RemoveListener(HWND hwnd) ret_to(WandX::RemoveClipboardFormatListener(hwnd));
+public: // Property - Count
+	/* R */ inline int Count() const ret_as(WandX::CountClipboardFormats());
+public: // Property - Name
+	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringX<IsUnicode> Name() const {
+		StringX<IsUnicode> str(MaxLen);
+		auto len = WandX::GetClipboardFormatName(uFormat, str, (int)MaxLen);
+		return right_cast(str.Resize(len));
+	}
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringA NameA() const ret_as(Name<false, MaxLen>());
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringW NameW() const ret_as(Name<true, MaxLen>());
+public:
+	inline operator bool() const ret_as(WandX::IsClipboardFormatAvailable(uFormat));
+	inline operator HANDLE() const ret_as(WandX::GetClipboardData(uFormat));
+	inline void operator=(HANDLE hMem) ret_to(WandX::SetClipboardData(uFormat, hMem));
+	inline auto &operator++() ret_to_self(uFormat = WandX::EnumClipboardFormats(uFormat));
+	inline auto &operator++() const ret_to_self(uFormat = WandX::EnumClipboardFormats(uFormat));
+	inline ClipboardIFormat operator++(int) ret_to(auto f = uFormat; uFormat = WandX::EnumClipboardFormats(uFormat), f);
+	inline const ClipboardIFormat operator++(int) const ret_to(auto f = uFormat; uFormat = WandX::EnumClipboardFormats(uFormat), f);
+};
+class ClipboardItf {
+public:
+	using IFormat = ClipboardIFormat;
+public:
+	static inline void Open(HWND hWnd) ret_to(WandX::OpenClipboard(hWnd));
+	static inline void Close() ret_to(WandX::CloseClipboard());
+public:
+	static inline bool ChangeChain(HWND hWndRemove, HWND hWndNewNext) ret_as(WandX::ChangeClipboardChain(hWndRemove, hWndNewNext));
+	static inline void Empty() ret_to(WandX::EmptyClipboard());
+
+public: // Formats
+	static inline UINT RegisterFormat(LPCSTR lpszFormat) ret_as(WandX::RegisterClipboardFormat(lpszFormat));
+#pragma region Properties
+public: // Property - SequenceNumber
+	/* R */ inline DWORD SequenceNumber() const ret_as(WandX::GetClipboardSequenceNumber());
+public: // Property - Owner
+	template<class AnyChild = void>
+	/* R */ inline WindowShim<AnyChild> Owner() ret_as(WandX::GetClipboardOwner());
+	template<class AnyChild = void>
+	/* R */ inline CWindowShim<AnyChild> Owner() const ret_as(WandX::GetClipboardOwner());
+public: // Property - Viewer
+	/* W */ inline auto &Viewer(HWND hWnd) ret_to_self(WandX::SetClipboardViewer(hWnd));
+	template<class AnyChild = void>
+	/* R */ inline WindowShim<AnyChild> Viewer() ret_as(WandX::GetClipboardViewer());
+	template<class AnyChild = void>
+	/* R */ inline CWindowShim<AnyChild> Viewer() const ret_as(WandX::GetClipboardViewer());
+public: // Property - Opener
+	template<class AnyChild = void>
+	/* R */ inline WindowShim<AnyChild> Opener() ret_as(WandX::GetOpenClipboardWindow());
+	template<class AnyChild = void>
+	/* R */ inline CWindowShim<AnyChild> Opener() const ret_as(WandX::GetOpenClipboardWindow());
+public: // Property - Format
+//	/* W */ inline auto &Format()
+#pragma endregion
+} Clipboard;
+#pragma endregion

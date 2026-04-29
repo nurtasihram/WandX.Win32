@@ -1,0 +1,353 @@
+module;
+
+#include <Windows.h>
+
+#define WANDX_CPPM_EXPORT_NATIVE
+#include "WandX.Win32.GDI.h"
+
+export module WandX.Win32.GDI;
+
+import WandX;
+import WandX.Win32;
+
+static constexpr auto ThisFile = WandX::LiString("WandX.Win32.GDI");
+
+export namespace WandX {
+namespace Native {
+
+#pragma region WinUesr.h
+wapi_ret(DrawEdge, true);
+wapi_ret(DrawIcon, true);
+wapi_ret_WAO(DrawText, positive);
+wapi_ret_WAO(DrawTextEx, positive);
+wapi_ret_WAT(GrayString, true);
+wapi_ret_WAT(DrawState, true);
+wapi_ret_WAO(TabbedTextOut, positive);
+wapi_ret_WAO(GetTabbedTextExtent, positive);
+wapi_ret(PaintDesktop, true);
+wapi_ret(WindowFromDC, direct);
+wapi_ret(ExcludeUpdateRgn, fault, ERROR);
+wapi_ret(ScrollDC, true);
+wapi_ret(DrawFocusRect, true);
+wapi_ret(FillRect, true);
+wapi_ret(FrameRect, true);
+wapi_ret(InvertRect, true);
+wapi_ret(DrawIconEx, true);
+#pragma endregion
+
+#pragma region WinGDI.h
+wapi_ret_WAO(AddFontResource, positive);
+wapi_ret(AnimatePalette, true);
+wapi_ret(Arc, true);
+wapi_ret(BitBlt, true);
+wapi_ret(CancelDC, true);
+wapi_ret(Chord, true);
+wapi_ret(ChoosePixelFormat, positive);
+wapi_ret(CloseMetaFile, notnull);
+wapi_ret_WAO(CopyMetaFile, notnull);
+wapi_ret(CreateBitmap, notnull);
+wapi_ret(CreateBitmapIndirect, notnull);
+wapi_ret(CreateBrushIndirect, notnull);
+wapi_ret(CreateCompatibleBitmap, notnull);
+wapi_ret(CreateDiscardableBitmap, notnull);
+wapi_ret(CreateCompatibleDC, notnull);
+wapi_ret_WAO(CreateDC, notnull);
+wapi_ret(CreateDIBitmap, notnull);
+wapi_ret(CreateDIBPatternBrush, notnull);
+wapi_ret(CreateDIBPatternBrushPt, notnull);
+wapi_ret_WAO(CreateFontIndirect, notnull);
+wapi_ret_WAO(CreateFont, notnull);
+wapi_ret(CreateHatchBrush, notnull);
+wapi_ret_WAO(CreateIC, notnull);
+wapi_ret_WAO(CreateMetaFile, notnull);
+wapi_ret(CreatePalette, notnull);
+wapi_ret(CreatePen, notnull);
+wapi_ret(CreatePenIndirect, notnull);
+wapi_ret(CreatePatternBrush, notnull);
+wapi_ret_WAO(CreateScalableFontResource, true);
+wapi_ret(CreateSolidBrush, notnull);
+wapi_ret(DeleteDC, true);
+wapi_ret(DeleteMetaFile, true);
+wapi_ret(DeleteObject, true);
+wapi_ret(DescribePixelFormat, positive);
+// DeviceCapabilities
+inline int DeviceCapabilities(LPCSTR pDevice, LPCSTR pPort, WORD fwCapability, LPSTR pOutput, CONST DEVMODEA *pDevMode)
+safe_ret_as(auto ret = ::DeviceCapabilitiesA(pDevice, pPort, fwCapability, pOutput, pDevMode); ret >= 0, ret);
+inline int DeviceCapabilities(LPCWSTR pDevice, LPCWSTR pPort, WORD fwCapability, LPWSTR pOutput, CONST DEVMODEW *pDevMode)
+safe_ret_as(auto ret = ::DeviceCapabilitiesW(pDevice, pPort, fwCapability, pOutput, pDevMode); ret >= 0, ret);
+// DrawEscape
+inline int DrawEscape(HDC hdc, int iEscape, int cjIn, LPCSTR lpIn)
+safe_ret_as(auto ret = ::DrawEscape(hdc, iEscape, cjIn, lpIn); ret >= 0, ret);
+// PtVisible
+inline bool PtVisible(HDC hdc, int x, int y)
+safe_ret_as(auto ret = ::PtVisible(hdc, x, y); ret >= 0, ret);
+wapi_ret(Ellipse, true);
+wapi_ret_WAO(EnumFontFamiliesEx, direct);
+wapi_ret_WAO(EnumFontFamilies, direct);
+wapi_ret_WAO(EnumFonts, direct);
+wapi_ret(EnumObjects, direct);
+wapi_ret(Escape, positive);
+wapi_ret(ExtEscape, positive);
+wapi_ret(ExtCreateRegion, notnull);
+wapi_ret(ExtFloodFill, true);
+wapi_ret(FloodFill, true);
+wapi_ret(GetROP2, positive);
+wapi_ret(GetAspectRatioFilterEx, true);
+wapi_ret(GetBkMode, positive);
+wapi_ret(GetBitmapBits, positive);
+wapi_ret(GetBitmapDimensionEx, true);
+wapi_ret(GetBoundsRect, positive);
+wapi_ret(GetBrushOrgEx, true);
+wapi_ret_WAT(GetCharWidth, true);
+wapi_ret_WAT(GetCharWidth32, true);
+wapi_ret_WAT(GetCharWidthFloat, true);
+wapi_ret_WAT(GetCharABCWidths, true);
+wapi_ret_WAT(GetCharABCWidthsFloat, true);
+wapi_ret(GetCurrentObject, notnull);
+wapi_ret(GetCurrentPositionEx, true);
+wapi_ret(GetDeviceCaps, direct);
+wapi_ret(GetDIBits, positive);
+wapi_ret_WAT(GetGlyphOutline, direct);
+wapi_ret(GetGraphicsMode, positive);
+wapi_ret(GetMapMode, positive);
+wapi_ret(GetMetaFileBitsEx, positive);
+wapi_ret_WAO(GetMetaFile, notnull);
+wapi_ret(GetObjectType, positive);
+wapi_ret_WAO(GetOutlineTextMetrics, positive);
+wapi_ret(GetPaletteEntries, positive);
+wapi_ret(GetPixelFormat, positive);
+wapi_ret(GetPolyFillMode, positive);
+wapi_ret(GetRasterizerCaps, true);
+wapi_ret(GetRegionData, positive);
+wapi_ret(GetStockObject, notnull);
+wapi_ret(GetStretchBltMode, positive);
+wapi_ret(GetSystemPaletteEntries, positive);
+wapi_ret_WAO(GetTextExtentPoint, true);
+wapi_ret_WAO(GetTextExtentPoint32, true);
+wapi_ret_WAO(GetTextExtentExPoint, true);
+wapi_ret(GetTextCharset, direct);
+wapi_ret(GetTextCharsetInfo, direct);
+wapi_ret(TranslateCharsetInfo, true);
+wapi_ret_WAO(GetCharacterPlacement, positive);
+wapi_ret(GetFontUnicodeRanges, positive);
+wapi_ret(GetTextExtentPointI, true);
+wapi_ret(GetTextExtentExPointI, true);
+wapi_ret(GetCharWidthI, true);
+wapi_ret(GetCharABCWidthsI, true);
+wapi_ret_WAO(AddFontResourceEx, positive);
+wapi_ret_WAO(RemoveFontResourceEx, true);
+wapi_ret(AddFontMemResourceEx, notnull);
+wapi_ret(RemoveFontMemResourceEx, true);
+wapi_ret(GetViewportExtEx, true);
+wapi_ret(GetViewportOrgEx, true);
+wapi_ret(GetWindowExtEx, true);
+wapi_ret(GetWindowOrgEx, true);
+wapi_ret(LineDDA, true);
+wapi_ret(LineTo, true);
+wapi_ret(MaskBlt, true);
+wapi_ret(PlgBlt, true);
+wapi_ret(PatBlt, true);
+wapi_ret(Pie, true);
+wapi_ret(PlayMetaFile, true);
+wapi_ret(PolyPolygon, true);
+wapi_ret(PtInRegion, direct);
+wapi_ret(RectInRegion, direct);
+wapi_ret(RectVisible, direct);
+wapi_ret(Rectangle, true);
+wapi_ret(RestoreDC, true);
+wapi_ret_WAO(ResetDC, notnull);
+wapi_ret_WAO(RemoveFontResource, true);
+wapi_ret(RoundRect, true);
+wapi_ret(ResizePalette, true);
+wapi_ret(SaveDC, positive);
+//// SelectObject
+//static inline HGDIOBJ SelectObject(HDC hdc, HGDIOBJ h)
+//safe_ret_as(auto ret = ::SelectObject(hdc, h); ret != HGDI_ERROR, ret);
+wapi_ret(SelectPalette, notnull);
+wapi_ret(SetBkMode, positive);
+wapi_ret(SetBitmapBits, positive);
+wapi_ret(SetBoundsRect, positive);
+wapi_ret(SetDIBits, positive);
+wapi_ret(SetDIBitsToDevice, direct);
+wapi_ret(SetGraphicsMode, positive);
+wapi_ret(SetMapMode, positive);
+wapi_ret(SetMetaFileBitsEx, notnull);
+wapi_ret(SetPaletteEntries, positive);
+wapi_ret(CreatePolygonRgn, notnull);
+wapi_ret(CreateEllipticRgn, notnull);
+wapi_ret(CreatePolyPolygonRgn, notnull);
+wapi_ret(CreateRoundRectRgn, notnull);
+wapi_ret(CreateRectRgn, notnull);
+wapi_ret(CreateRectRgnIndirect, notnull);
+wapi_ret(CreateEllipticRgnIndirect, notnull);
+wapi_ret(EqualRgn, direct);
+wapi_ret(SetRectRgn, true);
+wapi_ret(FillRgn, true);
+wapi_ret(FrameRgn, true);
+wapi_ret(GetClipRgn, positive);
+wapi_ret(GetMetaRgn, positive);
+wapi_ret(GetRandomRgn, positive);
+wapi_ret(GetRgnBox, positive);
+wapi_ret(InvertRgn, true);
+wapi_ret(PaintRgn, true);
+wapi_ret(CombineRgn, fault, ERROR);
+wapi_ret(OffsetClipRgn, fault, ERROR);
+wapi_ret(OffsetRgn, fault, ERROR);
+wapi_ret(RealizePalette, fault, ERROR);
+wapi_ret(SelectClipRgn, fault, ERROR);
+wapi_ret(ExtSelectClipRgn, fault, ERROR);
+wapi_ret(SetMetaRgn, fault, ERROR);
+wapi_ret(ExcludeClipRect, fault, ERROR);
+wapi_ret(GetClipBox, fault, ERROR);
+wapi_ret(IntersectClipRect, fault, ERROR);
+wapi_ret(GetFontLanguageInfo, fault, GCP_ERROR);
+//wapi_ret(GetGlyphIndices, fault_WAO, GDI_ERROR);
+wapi_ret(GetFontData, fault, GDI_ERROR);
+wapi_ret(GetSystemPaletteUse, fault, SYSPAL_ERROR);
+wapi_ret(SetSystemPaletteUse, fault, SYSPAL_ERROR);
+wapi_ret(GetTextCharacterExtra, fault, 0x8000000);
+wapi_ret(SetTextCharacterExtra, fault, 0x8000000);
+//wapi_ret(GetEnhMetaFileDescription, fault_WAO, GDI_ERROR);
+wapi_ret(GetEnhMetaFilePaletteEntries, fault, GDI_ERROR);
+wapi_ret(SetMapperFlags, fault, GDI_ERROR);
+wapi_ret(GetLayout, fault, GDI_ERROR);
+wapi_ret(SetLayout, fault, GDI_ERROR);
+wapi_ret(GetTextAlign, fault, GDI_ERROR);
+wapi_ret(SetTextAlign, fault, GDI_ERROR);
+wapi_ret(GetTextColor, fault, CLR_INVALID);
+wapi_ret(SetTextColor, fault, CLR_INVALID);
+wapi_ret(GetBkColor, fault, CLR_INVALID);
+wapi_ret(SetBkColor, fault, CLR_INVALID);
+wapi_ret(GetDCBrushColor, fault, CLR_INVALID);
+wapi_ret(SetDCBrushColor, fault, CLR_INVALID);
+wapi_ret(GetDCPenColor, fault, CLR_INVALID);
+wapi_ret(SetDCPenColor, fault, CLR_INVALID);
+wapi_ret(GetNearestColor, fault, CLR_INVALID);
+wapi_ret(GetNearestPaletteIndex, fault, CLR_INVALID);
+wapi_ret(GetPixel, fault, CLR_INVALID);
+wapi_ret(SetPixel, fault, CLR_INVALID);
+wapi_ret(SetPixelV, true);
+wapi_ret(SetPixelFormat, true);
+wapi_ret(SetPolyFillMode, positive);
+wapi_ret(StretchBlt, true);
+wapi_ret(StretchDIBits, direct);
+wapi_ret(SetROP2, positive);
+wapi_ret(SetStretchBltMode, positive);
+wapi_ret(SetTextJustification, true);
+wapi_ret(UpdateColors, true);
+wapi_ret(AlphaBlend, true);
+wapi_ret(TransparentBlt, true);
+wapi_ret(GradientFill, true);
+wapi_ret(GdiAlphaBlend, true);
+wapi_ret(GdiTransparentBlt, true);
+wapi_ret(GdiGradientFill, true);
+wapi_ret(PlayMetaFileRecord, true);
+wapi_ret(EnumMetaFile, true);
+wapi_ret(CloseEnhMetaFile, notnull);
+wapi_ret_WAO(CopyEnhMetaFile, notnull);
+wapi_ret_WAO(CreateEnhMetaFile, notnull);
+wapi_ret(DeleteEnhMetaFile, true);
+wapi_ret(EnumEnhMetaFile, true);
+wapi_ret_WAO(GetEnhMetaFile, notnull);
+wapi_ret(GetEnhMetaFileBits, positive);
+wapi_ret(GetEnhMetaFileHeader, positive);
+wapi_ret(GetEnhMetaFilePixelFormat, positive);
+wapi_ret(GetWinMetaFileBits, positive);
+wapi_ret(PlayEnhMetaFile, true);
+wapi_ret(PlayEnhMetaFileRecord, true);
+wapi_ret(SetEnhMetaFileBits, notnull);
+wapi_ret(SetWinMetaFileBits, notnull);
+wapi_ret(GdiComment, true);
+wapi_ret_WAO(GetTextMetrics, true);
+wapi_ret(AngleArc, true);
+wapi_ret(PolyPolyline, true);
+wapi_ret(GetWorldTransform, true);
+wapi_ret(SetWorldTransform, true);
+wapi_ret(ModifyWorldTransform, true);
+wapi_ret(CombineTransform, true);
+wapi_ret(CreateDIBSection, notnull);
+wapi_ret(GetDIBColorTable, positive);
+wapi_ret(SetDIBColorTable, positive);
+wapi_ret(SetColorAdjustment, true);
+wapi_ret(GetColorAdjustment, true);
+wapi_ret(CreateHalftonePalette, notnull);
+wapi_ret_WAO(StartDoc, positive);
+wapi_ret(EndDoc, positive);
+wapi_ret(StartPage, positive);
+wapi_ret(EndPage, positive);
+wapi_ret(AbortDoc, positive);
+wapi_ret(SetAbortProc, positive);
+wapi_ret(AbortPath, true);
+wapi_ret(ArcTo, true);
+wapi_ret(BeginPath, true);
+wapi_ret(CloseFigure, true);
+wapi_ret(EndPath, true);
+wapi_ret(FillPath, true);
+wapi_ret(FlattenPath, true);
+wapi_ret(GetPath, direct);
+wapi_ret(PathToRegion, notnull);
+wapi_ret(PolyDraw, true);
+wapi_ret(SelectClipPath, true);
+wapi_ret(SetArcDirection, positive);
+wapi_ret(SetMiterLimit, true);
+wapi_ret(StrokeAndFillPath, true);
+wapi_ret(StrokePath, true);
+wapi_ret(WidenPath, true);
+wapi_ret(ExtCreatePen, notnull);
+wapi_ret(GetMiterLimit, true);
+wapi_ret(GetArcDirection, positive);
+wapi_ret_WAT(GetObject, positive);
+wapi_ret(MoveToEx, true);
+wapi_ret_WAO(TextOut, true);
+wapi_ret_WAO(ExtTextOut, true);
+wapi_ret_WAO(PolyTextOut, true);
+wapi_ret(DPtoLP, true);
+wapi_ret(LPtoDP, true);
+wapi_ret(Polygon, true);
+wapi_ret(Polyline, true);
+wapi_ret(PolyBezier, true);
+wapi_ret(PolyBezierTo, true);
+wapi_ret(PolylineTo, true);
+wapi_ret(SetViewportExtEx, true);
+wapi_ret(SetViewportOrgEx, true);
+wapi_ret(SetWindowExtEx, true);
+wapi_ret(SetWindowOrgEx, true);
+wapi_ret(OffsetViewportOrgEx, true);
+wapi_ret(OffsetWindowOrgEx, true);
+wapi_ret(ScaleViewportExtEx, true);
+wapi_ret(ScaleWindowExtEx, true);
+wapi_ret(SetBitmapDimensionEx, true);
+wapi_ret(SetBrushOrgEx, true);
+wapi_ret_WAO(GetTextFace, positive);
+wapi_ret_WAT(GetKerningPairs, positive);
+wapi_ret(GetDCOrgEx, true);
+wapi_ret(UnrealizeObject, true);
+wapi_ret(GdiFlush, true);
+wapi_ret(GdiSetBatchLimit, positive);
+wapi_ret(GdiGetBatchLimit, positive);
+wapi_ret(SetICMMode, positive);
+wapi_ret(CheckColorsInGamut, true);
+wapi_ret(GetColorSpace, notnull);
+wapi_ret_WAO(GetLogColorSpace, true);
+wapi_ret_WAO(CreateColorSpace, notnull);
+wapi_ret(SetColorSpace, notnull);
+wapi_ret(DeleteColorSpace, true);
+wapi_ret_WAO(GetICMProfile, true);
+wapi_ret_WAO(SetICMProfile, true);
+wapi_ret(GetDeviceGammaRamp, true);
+wapi_ret(SetDeviceGammaRamp, true);
+wapi_ret(ColorMatchToTarget, true);
+wapi_ret_WAO(EnumICMProfiles, direct);
+wapi_ret(ColorCorrectPalette, true);
+// GdiRegisterDdraw - Undocument
+// GdiMarshalSize - Undocument
+// GdiMarshal - Undocument
+// GdiUnmarshal - Undocument
+// FixBrushOrgEx - Undocument
+// UpdateICMRegKey - Deprecated
+#pragma endregion
+
+}
+
+
+}

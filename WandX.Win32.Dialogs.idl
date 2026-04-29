@@ -1,0 +1,390 @@
+class DialogIItem {
+	template<class>
+	friend class DialogBase;
+	mutable HWND hDlg;
+	mutable int nIDDlgItem;
+private:
+	DialogIItem(HWND hDlg, int nIDDlgItem) : hDlg(hDlg), nIDDlgItem(nIDDlgItem) {}
+	DialogIItem(const DialogIItem &) = delete;
+public:
+	DialogIItem(DialogIItem &dii) : hDlg(dii.hDlg), nIDDlgItem(dii.nIDDlgItem) {}
+public:
+	template<class RetType = LRESULT, class MsgType = UINT, class WParam = WPARAM, class LParam = LPARAM>
+	inline RetType Send(MsgType msgid, WParam wParam = 0, LParam lParam = 0) const
+		ret_as(big_cast<RetType>(WandX::SendDlgItemMessage(hDlg, nIDDlgItem, (UINT)(msgid), small_cast<WPARAM>(wParam), small_cast<LPARAM>(lParam))));
+#pragma region Properties
+public: // Property - Int
+	/* W */ inline auto &Int(INT value) ret_to_self(WandX::SetDlgItemInt(hDlg, nIDDlgItem, value, true));
+	/* W */ inline auto &Int(UINT value) ret_to_self(WandX::SetDlgItemInt(hDlg, nIDDlgItem, value, false));
+	/* R */ inline INT   Int() const ret_as(WandX::GetDlgItemInt(hDlg, nIDDlgItem, O, true));
+public: // Property - UInt
+	/* R */ inline UINT  UInt() const ret_as(WandX::GetDlgItemInt(hDlg, nIDDlgItem, O, false));
+public: // Property - ButtonCheck
+	/* W */ inline auto &CheckButton(bool bCheck) ret_to_self(WandX::CheckDlgButton(hDlg, nIDDlgItem, bCheck ? BST_CHECKED : BST_UNCHECKED));
+	/* R */ inline bool CheckButton() const ret_as(WandX::IsDlgButtonChecked(hDlg, nIDDlgItem) == BST_CHECKED);
+public: // Property - Text
+	template<class TCHAR>
+	/* W */ inline auto &Text(const TCHAR *lpText) ret_to_self(WandX::SetDlgItemText(hDlg, nIDDlgItem, lpText));
+	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenNotice>
+	/* R */ inline StringX<IsUnicode> Text() const {
+		StringX<IsUnicode> str(MaxLen);
+		auto len = WandX::GetDlgItemText(hDlg, nIDDlgItem, str, (int)MaxLen);
+		return right_cast(str.Resize(len));
+	}
+	template<SizeT MaxLen = MaxLenNotice>
+	/* R */ inline StringA TextA() const ret_as(Text<false, MaxLen>());
+	template<SizeT MaxLen = MaxLenNotice>
+	/* R */ inline StringW TextW() const ret_as(Text<true, MaxLen>());
+public: // Property - Window
+	template<class AnyChild = void>
+	/* R */ inline WindowShim<AnyChild> Window() ret_as(WandX::GetDlgItem(hDlg, nIDDlgItem));
+	template<class AnyChild = void>
+	/* R */ inline CWindowShim<AnyChild> Window() const ret_as(WandX::GetDlgItem(hDlg, nIDDlgItem));
+#pragma endregion
+public:
+	inline operator HWND() const ret_as(WandX::GetDlgItem(hDlg, nIDDlgItem));
+	template<class AnyChild>
+	inline operator WindowShim<AnyChild>() ret_as(WandX::GetDlgItem(hDlg, nIDDlgItem));
+	template<class AnyChild>
+	inline operator CWindowShim<AnyChild>() const ret_as(WandX::GetDlgItem(hDlg, nIDDlgItem));
+};
+template<class AnyChild>
+class DialogBase : public WindowBase<AnyChild> {
+public:
+public:
+	template<class IsUnicode>
+	class CreateStructX {
+
+	};
+	// inline auto Create()
+	// inline auto Box()
+	template<class AnyType = INT_PTR>
+	inline void End(AnyType nResult) ret_to(WandX::EndDialog(self, small_cast<INT_PTR>(nResult)));
+#pragma region Properties
+public: //
+#pragma endregion
+};
+
+//////////// ! -- TODO: Add exception system with CommDlgExtendedError -- !  ////////////
+
+template<class DIALOGSTRUCT, class AnyChild>
+class DialogCommon :
+	public StructShim<DIALOGSTRUCT>,
+	public ExtendShim<DialogCommon<DIALOGSTRUCT, AnyChild>, AnyChild> {
+	using LPCTSTR = decltype(DIALOGSTRUCT::lpTemplateName);
+	using String = StringX<IsSame<LPCTSTR, LPCWSTR>>;
+public:
+	using Super = StructShim<DIALOGSTRUCT>;
+	using Child = AnyChild;
+public:
+	DialogCommon() ret_to(this->lStructSize = sizeof(DIALOGSTRUCT));
+public: // Properties
+	/* W */ inline auto &Owner(HWND hwndOwner) ret_to_child(self->hwndOwner = hwndOwner);
+	/* W */ inline auto &Module(HINSTANCE hInstance) ret_to_child(self->hInstance = (decltype(self->hInstance))hInstance);
+	/* W */ inline auto &Template(LPCTSTR lpTemplateName) ret_to_child(self->lpTemplateName = lpTemplateName);
+	template<class AnyType>
+	/* W */ inline auto &CustData(AnyType dat) ret_to_child(self->lCustData = small_cast<LPARAM>(dat));
+public:
+	//	LPOFNHOOKPROC lpfnHook;
+};
+
+#pragma region DialogColor
+enum_flags(DialogColorStyle     , DWORD                   ,
+		   InitRGB              = CC_RGBINIT              ,
+		   FullOpen             = CC_FULLOPEN             ,
+		   PreventFullOpen      = CC_PREVENTFULLOPEN      ,
+		   ShowHelp             = CC_SHOWHELP             ,
+		   EnableHook           = CC_ENABLEHOOK           ,
+		   EnableTemplate       = CC_ENABLETEMPLATE       ,
+		   EnableTemplateHandle = CC_ENABLETEMPLATEHANDLE ,
+		   SolidColor           = CC_SOLIDCOLOR           ,
+		   AnyColor             = CC_ANYCOLOR             );
+using DlgColorStyle = DialogColorStyle;
+template<bool IsUnicode, class AnyChild = void>
+class DialogColorX : public DialogCommon<
+	structx(CHOOSECOLOR),
+	Chain<DialogColorX<IsUnicode, AnyChild>, AnyChild>> {
+	using_structx(CHOOSECOLOR);
+public:
+	using Super = DialogCommon<CHOOSECOLOR, DialogColorX>;
+public:
+	using Style = DialogColorStyle;
+	using ColorSet = ArrayOf<RGBColor, 16>;
+	using CColorSet = const ArrayOf<RGBColor, 16>;
+public:
+	DialogColorX() ret_to(self->lStructSize = sizeof(CHOOSECOLOR));
+public: // Property - Styles
+	/* W */ inline auto &Styles(Style style) ret_to_child(self->Flags = style.yield());
+public: // Property - CustColors
+	/* W */ inline auto &CustColors(ColorSet *lpCustColors) ret_to_child(self->lpCustColors = (COLORREF *)lpCustColors);
+	/* R */ inline CColorSet *CustColors() const ret_as((CColorSet *)self->lpCustColors);
+public: // Property - Result
+	/* W */ inline auto &Result(COLORREF rgb) ret_to_child(self->rgbResult = rgb);
+proxy_prop_get(Result,rgbResult,RGBColor);
+public:
+	inline bool Choose() ret_as(WandX::ChooseColor(this));
+};
+template<class AnyChild = void>
+using DialogColor  = DialogColorX<IsUnicode, AnyChild>;
+template<class AnyChild = void>
+using DialogColorA = DialogColorX<false, AnyChild>;
+template<class AnyChild = void>
+using DialogColorW = DialogColorX<true, AnyChild>;
+template<class AnyChild = void>
+using DlgColor = DialogColor<AnyChild>;
+template<class AnyChild = void>
+using DlgColorA = DialogColorA<AnyChild>;
+template<class AnyChild = void>
+using DlgColorW = DialogColorW<AnyChild>;
+#pragma endregion
+
+#pragma region DialogFont
+enum_flags(DialogFontStyle       , DWORD                   ,
+		   ScreenFonts           = CF_SCREENFONTS          ,
+		   PrinterFonts          = CF_PRINTERFONTS         ,
+		   ShowHelp              = CF_SHOWHELP             ,
+		   EnableHook            = CF_ENABLEHOOK           ,
+		   EnableTemplate        = CF_ENABLETEMPLATE       ,
+		   EnableTemplateHandle  = CF_ENABLETEMPLATEHANDLE ,
+		   InitTologFontStruct   = CF_INITTOLOGFONTSTRUCT  ,
+		   UseStyle              = CF_USESTYLE             ,
+		   Effects               = CF_EFFECTS              ,
+		   Apply                 = CF_APPLY                ,
+		   Ansionly              = CF_ANSIONLY             ,
+		   NoVectorFonts         = CF_NOVECTORFONTS        ,
+		   NoSimulations         = CF_NOSIMULATIONS        ,
+		   LimitSize             = CF_LIMITSIZE            ,
+		   FixedPitchOnly        = CF_FIXEDPITCHONLY       ,
+		   WYSIWYG               = CF_WYSIWYG              ,
+		   ForceFontExist        = CF_FORCEFONTEXIST       ,
+		   ScalableOnly          = CF_SCALABLEONLY         ,
+		   TTOnly                = CF_TTONLY               ,
+		   NoFaceSel             = CF_NOFACESEL            ,
+		   NoStyleSel            = CF_NOSTYLESEL           ,
+		   NoSizeSel             = CF_NOSIZESEL            ,
+		   SelectScript          = CF_SELECTSCRIPT         ,
+		   NoScriptSel           = CF_NOSCRIPTSEL          ,
+		   NoVertFonts           = CF_NOVERTFONTS          ,
+		   InActiveFonts         = CF_INACTIVEFONTS        );
+using DlgFontStyle = DialogFontStyle;
+template<bool IsUnicode, class AnyChild = void>
+class DialogFontX : public DialogCommon<
+	structx(CHOOSEFONT),
+	Chain<DialogFontX<IsUnicode, AnyChild>, AnyChild>> {
+	using_structx(CHOOSEFONT);
+	using_structx(FontLogic);
+	using_structx(LOGFONT);
+	using_structx(String);
+	using LPCTSTR = LPCXSTR<IsUnicode>;
+public:
+	using Super = StructShim<CHOOSEFONT>;
+	using Style = DialogFontStyle;
+public:
+	DialogFontX() ret_to(self->lStructSize = sizeof(CHOOSEFONT));
+	~DialogFontX() ret_to(String::AutoFree(self->lpszStyle));
+public: // Property - Styles
+	proxy_prop_set(Styles,style,Style);
+public: // Property - FontTypes
+	proxy_prop_set(FontTypes,ft,FontType);
+	/* R */ inline FontType FontTypes() const ret_as(reuse_cast<FontType>(self->nFontType));
+	proxy_prop_sync(SizeMin,nSizeMin,INT);
+	proxy_prop_sync(SizeMax,nSizeMax,INT);
+	proxy_prop_sync(PointSize,iPointSize,INT);
+	proxy_prop(Color,rgbColors,COLORREF,RGBColor);
+	proxy_prop(DC,hDC,HDC,CDC);
+public: // Property - FontStyle
+	/* W */ inline auto &FontStyle(const String &style) ret_to_self(String::AutoCopy(self->lpszStyle, style));
+	template<SizeT MaxLen = MaxLenNotice>
+	/* R */ inline const String FontStyle() const ret_as(CString(self->lpszStyle, MaxLen));
+public: // Property - LogFont
+	/* W */ inline auto &LogFont(LOGFONT *lpLogFont) ret_to_self(self->lpLogFont = lpLogFont);
+	/* W */ inline auto &LogFont(FontLogic *lpLogFont) ret_to_self(self->lpLogFont = (LOGFONT *)lpLogFont);
+proxy_prop_get(LogFont,lpLogFont,auto);
+public:
+	inline bool Choose() ret_as(WandX::ChooseFont(this));
+};
+template<class AnyChild = void>
+using DialogFont = DialogFontX<IsUnicode, AnyChild>;
+template<class AnyChild = void>
+using DialogFontA = DialogFontX<false, AnyChild>;
+template<class AnyChild = void>
+using DialogFontW = DialogFontX<true, AnyChild>;
+template<class AnyChild = void>
+using DlgFont = DialogFont<AnyChild>;
+template<class AnyChild = void>
+using DlgFontA = DialogFontA<AnyChild>;
+template<class AnyChild = void>
+using DlgFontW = DialogFontW<AnyChild>;
+#pragma endregion
+
+#pragma region DialogFile
+enum_flags(DialogFileStyle       , DWORD                    ,
+		   ReadOnly              = OFN_READONLY             ,
+		   OverwritePrompt       = OFN_OVERWRITEPROMPT      ,
+		   HideReadOnly          = OFN_HIDEREADONLY         ,
+		   NoChangeDir           = OFN_NOCHANGEDIR          ,
+		   ShowHelp              = OFN_SHOWHELP             ,
+		   EnableHook            = OFN_ENABLEHOOK           ,
+		   EnableTemplate        = OFN_ENABLETEMPLATE       ,
+		   EnableTemplateHandle  = OFN_ENABLETEMPLATEHANDLE ,
+		   NoValidate            = OFN_NOVALIDATE           ,
+		   AllowMultiSelect      = OFN_ALLOWMULTISELECT     ,
+		   ExtensionDifferent    = OFN_EXTENSIONDIFFERENT   ,
+		   PathMustExist         = OFN_PATHMUSTEXIST        ,
+		   FileMustExist         = OFN_FILEMUSTEXIST        ,
+		   CreatePrompt          = OFN_CREATEPROMPT         ,
+		   ShareAware            = OFN_SHAREAWARE           ,
+		   NoReadOnlyReturn      = OFN_NOREADONLYRETURN     ,
+		   NoTestFileCreate      = OFN_NOTESTFILECREATE     ,
+		   NoNetworkButton       = OFN_NONETWORKBUTTON      ,
+		   NoLongNames           = OFN_NOLONGNAMES          ,
+		   Explorer              = OFN_EXPLORER             ,
+		   NodeReferenceLinks    = OFN_NODEREFERENCELINKS   ,
+		   LongNames             = OFN_LONGNAMES            ,
+		   EnableIncludeNotify   = OFN_ENABLEINCLUDENOTIFY  ,
+		   EnableSizing          = OFN_ENABLESIZING         ,
+		   DontAddToRecent       = OFN_DONTADDTORECENT      ,
+		   ForcesHowHidden       = OFN_FORCESHOWHIDDEN      );
+using DlgFileStyle = DialogFileStyle;
+template<bool IsUnicode, class AnyChild = void>
+class DialogFileX : public DialogCommon<
+	structx(OPENFILENAME),
+	Chain<DialogFileX<IsUnicode, AnyChild>, AnyChild>> {
+	using_structx(OPENFILENAME);
+	using LPTSTR = LPXSTR<IsUnicode>;
+	using LPCTSTR = LPCXSTR<IsUnicode>;
+	using String = StringX<IsUnicode>;
+public:
+	using Super = StructShim<OPENFILENAME>;
+	using Style = DialogFileStyle;
+public:
+	DialogFileX() ret_to(self->lStructSize = sizeof(OPENFILENAME));
+public: // Property - Styles
+	proxy_prop_set(Styles,Flags,Style);
+public: // Property - FileOffset
+proxy_prop_get(FileOffset,nFileOffset,WORD);
+public: // Property - FileExtension
+proxy_prop_get(FileExtension,nFileExtension,WORD);
+public: // Property - File
+//	/* W */ inline auto &File(const String &strFile) ret_to_self(self->lpstrFile = lpstrFile);
+	/* W */ inline auto &File(String &strFile) ret_to_self(self->lpstrFile = strFile, self->nMaxFile = (DWORD)strFile.Length());
+	/* R */ inline const String File() const ret_as(CString(self->lpstrFile, self->nMaxFile));
+	proxy_prop(FileMaxLen,nMaxFile,DWORD,auto);
+public: // Property - FileTitle
+	/* W */ inline auto &FileTitle(LPTSTR lpstrFileTitle) ret_as(self->lpstrFileTitle = lpstrFileTitle);
+	/* W */ inline auto &FileTitle(String &strFileTitle) ret_to_self(self->lpstrFileTitle = strFileTitle, self->nMaxFileTitle = (DWORD)strFileTitle.Length());
+	/* R */ inline const String FileTitle() const ret_as(CString(self->lpstrFileTitle, self->nMaxFileTitle));
+public: // Property - FileTitleMaxLen
+proxy_prop_set(FileTitleMaxLen, DWORD, nMaxFileTitle);
+	/* W */ inline auto  FileTitleMaxLen() const ret_as(self->nMaxFileTitle);
+public: // Property - CustomFilter
+proxy_prop_set(CustomFilter, LPTSTR, lpstrCustomFilter);
+	/* W */ inline auto &CustomFilter(String &strCustFilter) ret_to_self(self->lpstrCustomFilter = strCustFilter, self->nMaxCustFilter = (DWORD)strCustFilter.Length());
+	/* R */ inline const String CustomFilter() const ret_as(CString(self->lpstrCustomFilter, self->nMaxCustFilter));
+	proxy_prop(CustomFilterMaxLen,nMaxCustFilter,DWORD,auto);
+public: // Property - Filter
+proxy_prop_set(Filter, LPCTSTR, lpstrFilter);
+public: // Property - FilterIndex
+proxy_prop_get(FilterIndex,nFilterIndex,DWORD);
+public: // Property - InitialDir
+proxy_prop_set(InitialDir, LPCTSTR, lpstrInitialDir);
+public: // Property - Title
+proxy_prop_set(Title, LPCTSTR, lpstrTitle);
+public: // Property - DefExt
+proxy_prop_set(DefExt, LPCTSTR, lpstrDefExt);
+public:
+	inline bool OpenFile() ret_as(WandX::GetOpenFileName(this));
+	inline bool SaveFile() ret_as(WandX::GetSaveFileName(this));
+};
+template<class AnyChild = void>
+using DialogFile = DialogFileX<IsUnicode, AnyChild>;
+template<class AnyChild = void>
+using DialogFileA = DialogFileX<false, AnyChild>;
+template<class AnyChild = void>
+using DialogFileW = DialogFileX<true, AnyChild>;
+template<class AnyChild = void>
+using DlgFile = DialogFile<AnyChild>;
+template<class AnyChild = void>
+using DlgFileA = DialogFileA<AnyChild>;
+template<class AnyChild = void>
+using DlgFileW = DialogFileW<AnyChild>;
+#pragma endregion
+
+#pragma region FindReplace
+enum_flags(DialogTextStyle       , DWORD                   ,
+		   Down                  = FR_DOWN                 ,
+		   WholeWord             = FR_WHOLEWORD            ,
+		   MatchCase             = FR_MATCHCASE            ,
+		   FindNext              = FR_FINDNEXT             ,
+		   Replace               = FR_REPLACE              ,
+		   ReplaceAll            = FR_REPLACEALL           ,
+		   DialogTerm            = FR_DIALOGTERM           ,
+		   ShowHelp              = FR_SHOWHELP             ,
+		   EnableHook            = FR_ENABLEHOOK           ,
+		   EnableTemplate        = FR_ENABLETEMPLATE       ,
+		   NoUpDown              = FR_NOUPDOWN             ,
+		   NoMatchCase           = FR_NOMATCHCASE          ,
+		   NoWholeWord           = FR_NOWHOLEWORD          ,
+		   EnableTemplateHandle  = FR_ENABLETEMPLATEHANDLE ,
+		   HideUpDown            = FR_HIDEUPDOWN           ,
+		   HideMatchCase         = FR_HIDEMATCHCASE        ,
+		   HideWholeWord         = FR_HIDEWHOLEWORD        ,
+		   Raw                   = FR_RAW                  ,
+		   ShowWrapAround        = FR_SHOWWRAPAROUND       ,
+		   NoWrapAround          = FR_NOWRAPAROUND         ,
+		   WrapAround            = FR_WRAPAROUND           ,
+		   MatchDiac             = FR_MATCHDIAC            ,
+		   MatchKashida          = FR_MATCHKASHIDA         ,
+		   MatchAlefHamza        = FR_MATCHALEFHAMZA       );
+using DlgTextStyle = DialogTextStyle;
+template<bool IsUnicode, class AnyChild = void>
+class DialogTextX : public DialogCommon<
+	structx(FINDREPLACE),
+	Chain<DialogTextX<IsUnicode, AnyChild>, AnyChild>> {
+	using_structx(FINDREPLACE);
+	using String = StringX<IsUnicode>;
+public:
+	using Super = StructShim<FINDREPLACE>;
+	using Style = DialogTextStyle;
+public:
+	DialogTextX() ret_to(self->lStructSize = sizeof(FINDREPLACE));
+public: // Properties
+	proxy_prop_set(Styles,Flags,Style);
+	/* R */ inline const String FindWhat() ret_as(CString(self->lpstrFindWhat, self->wFindWhatLen));
+	/* R */ inline const String ReplaceWith() ret_as(CString(self->lpstrReplaceWith, self->wReplaceWithLen));
+public:
+	inline HWND Find() ret_as(WandX::FindText(this));
+	inline HWND Replace() ret_as(WandX::ReplaceText(this));
+};
+template<class AnyChild = void>
+using DialogText = DialogTextX<IsUnicode, AnyChild>;
+template<class AnyChild = void>
+using DialogTextA = DialogTextX<false, AnyChild>;
+template<class AnyChild = void>
+using DialogTextW = DialogTextX<true, AnyChild>;
+template<class AnyChild = void>
+using DlgText = DialogText<AnyChild>;
+template<class AnyChild = void>
+using DlgTextA = DialogTextA<AnyChild>;
+template<class AnyChild = void>
+using DlgTextW = DialogTextW<AnyChild>;
+#pragma endregion
+
+#pragma region DialogPrint
+#pragma endregion
+
+#pragma region DialogPageSetup
+#pragma endregion
+
+//class ConfigComm : public StructShim<COMMCONFIG> {
+//	HWND hwndOwner = O;
+//public:
+//	ConfigComm() {
+//		self->dwSize = sizeof(COMMCONFIG);
+//		//self->wVersion = COMMCONFIG_VERSION;
+//	}
+//public: // Properties
+//	/* W */ inline auto &Parent(HWND hWnd) ret_to_self(this->hwndOwner = hWnd);
+//public:
+//	inline bool Config() ret_as(CommConfigDialog(L"", hwndOwner, self))
+//};
