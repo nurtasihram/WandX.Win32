@@ -56,9 +56,7 @@ wapi_ret(GetConsoleScreenBufferInfoEx, true);
 wapi_ret(SetConsoleScreenBufferInfoEx, true);
 wapi_ret(SetConsoleScreenBufferSize, true);
 wapi_ret(SetConsoleCursorPosition, true);
-// GetLargestConsoleWindowSize
-inline COORD GetLargestConsoleWindowSize(HANDLE hConsoleOutput)
-safe_ret_as(auto c = ::GetLargestConsoleWindowSize(hConsoleOutput); c.X &&c.Y, c);
+wapi_ret(GetLargestConsoleWindowSize, fault, COORD{ 0 });
 wapi_ret(SetConsoleTextAttribute, true);
 wapi_ret(SetConsoleWindowInfo, true);
 wapi_ret_WAO(WriteConsoleOutputCharacter, true);
@@ -76,9 +74,7 @@ wapi_ret_WAO(SetConsoleTitle, true);
 
 #pragma region ConsoleApi3.h
 wapi_ret(GetNumberOfConsoleMouseButtons, positive);
-// GetConsoleFontSize
-inline COORD GetConsoleFontSize(HANDLE hConsoleOutput, DWORD nFont)
-safe_ret_as(auto c = ::GetConsoleFontSize(hConsoleOutput, nFont); c.X &&c.Y, c);
+wapi_ret(GetConsoleFontSize, fault, COORD{ 0 });
 wapi_ret(GetCurrentConsoleFont, true);
 wapi_ret(GetCurrentConsoleFontEx, true);
 wapi_ret(SetCurrentConsoleFontEx, true);
@@ -98,6 +94,9 @@ wapi_ret(GetConsoleProcessList, positive);
 #pragma endregion
 
 }
+
+constexpr bool operator==(COORD c1, COORD c2) ret_as(c1.X == c2.X && c1.Y == c2.Y);
+constexpr bool operator!=(COORD c1, COORD c2) ret_as(c1.X != c2.X || c1.Y != c2.Y);
 
 #include "WandX.Win32.Console.idl"
 
