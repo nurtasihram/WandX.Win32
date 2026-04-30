@@ -6,7 +6,7 @@
 //----------- _WX_COMPILED_TIME ----------------------------------------------------------//
 #      define _WX_COMPILED_TIME               __DATE__ " " __TIME__                       //
 //----------- _WX_CPP_STANDARD -----------------------------------------------------------//
-#      define _WX_CPP_STANDARD                mx_str(__cplusplus)                         //
+#      define _WX_CPP_STANDARD                macro_str(__cplusplus)                         //
 //----------- _WX_CHAR_MODE --------------------------------------------------------------//
 #if   defined                                 UNICODE                                     //
 #      define _WX_CHAR_MODE                   "Unicode"                                   //
@@ -45,11 +45,11 @@
 #endif                                                                                    //
 //----------- _WX_COMPILER ---------------------------------------------------------------//
 #if   defined                                 __clang__                                   //
-#      define _WX_COMPILER                    "Clang "       mx_str(__clang_version__)    //
+#      define _WX_COMPILER                    "Clang "       macro_str(__clang_version__)    //
 #elif defined                                 __GNUC__                                    //
-#      define _WX_COMPILER                    "GCC "         mx_str(__VERSION__)          //
+#      define _WX_COMPILER                    "GCC "         macro_str(__VERSION__)          //
 #elif defined                                 _MSC_VER                                    //
-#      define _WX_COMPILER                    "MSVC "        mx_str(_MSC_FULL_VER)        //
+#      define _WX_COMPILER                    "MSVC "        macro_str(_MSC_FULL_VER)        //
 #else                                                                                     //
 #      define _WX_COMPILER                    "Unknown"                                   //
 #endif                                                                                    //
@@ -127,91 +127,48 @@
 #else                                                                                     //
 #      define _WX_NTDDI_NAME                  "Windows Unknown"                           //
 #endif                                                                                    //
-#      define _NTDDI_INFO                     _WX_NTDDI_NAME " - " mx_str(NTDDI_VERSION)  //
+#      define _NTDDI_INFO                     _WX_NTDDI_NAME " - " macro_str(NTDDI_VERSION)  //
 //-------------------------------- _WX_COMPILATION_INFO ----------------------------------//
 #             define                          _WX_COMPILATION_INFO                         \
-              "Compiled Date: "               _WX_COMPILED_TIME                       "\n" \
-              "C++ Standard:  "               _WX_CPP_STANDARD                        "\n" \
-              "Char Mode:     "               _WX_CHAR_MODE                           "\n" \
-              "Build Mode:    "               _WX_BUILD_MODE                          "\n" \
-              "Platform Bits: "               _WX_PLATFORM_BITS                       "\n" \
-              "Architecture:  "               _WX_ARCHITECTURE                        "\n" \
-              "Compiler:      "               _WX_COMPILER                            "\n" \
-              "NTDDI Version: "               _WX_NTDDI_NAME                              //
+			  "Compiled Date: "               _WX_COMPILED_TIME                       "\n" \
+			  "C++ Standard:  "               _WX_CPP_STANDARD                        "\n" \
+			  "Char Mode:     "               _WX_CHAR_MODE                           "\n" \
+			  "Build Mode:    "               _WX_BUILD_MODE                          "\n" \
+			  "Platform Bits: "               _WX_PLATFORM_BITS                       "\n" \
+			  "Architecture:  "               _WX_ARCHITECTURE                        "\n" \
+			  "Compiler:      "               _WX_COMPILER                            "\n" \
+			  "NTDDI Version: "               _WX_NTDDI_NAME                              //
 #pragma endregion //////////////////////////////////////////////////////////////////////////
 
 #ifdef WANDX_CPPM_EXPORT_NATIVE
 
 #	pragma region Windows API Reflectors
 
+#	define __wapi_info(name) ThisFile, GetLastError, LiString(#name)
+
+#	define __wapi_rops_noreturn(...)         RefNoReturn
+#	define __wapi_rops_direct(...)           RefReturnDirect
+#	define __wapi_rops_true(...)             RefReturnTrue
+#	define __wapi_rops_positive(...)         RefReturnPositive
+#	define __wapi_rops_notzero(...)          RefReturnNotZero
+#	define __wapi_rops_natural(...)          RefReturnNatural
+#	define __wapi_rops_notnull(...)          RefReturnNotNull
+#	define __wapi_rops_validhd(...)          RefReturnHandle
+#	define __wapi_rops_success(...)          RefReturnSuccess
+#	define __wapi_rops_fault(fault_val)      RefReturnFaultBy<fault_val, LiString(#fault_val)>::template Value
+
+#	define __wapi_rops(type, ...)            macro_call(macro_cat(__wapi_rops_, type), __VA_ARGS__)
+
 /* Macro Windows API reflectors */
 
-#	define wapi_ret_direct(name)             constexpr RefReturnDirect   <ThisFile, LiString(#name), ::name> name
-#	define wapi_ret_true(name)               constexpr RefReturnTrue     <ThisFile, LiString(#name), ::name> name
-#	define wapi_ret_validhd(name)            constexpr RefReturnHandle   <ThisFile, LiString(#name), ::name> name
-#	define wapi_ret_notzero(name)            constexpr RefReturnNotZero  <ThisFile, LiString(#name), ::name> name
-#	define wapi_ret_notnull(name)            constexpr RefReturnNotNull  <ThisFile, LiString(#name), ::name> name
-#	define wapi_ret_success(name)            constexpr RefReturnSuccess  <ThisFile, LiString(#name), ::name> name
-#	define wapi_ret_positive(name)           constexpr RefReturnPositive <ThisFile, LiString(#name), ::name> name
-#	define wapi_ret_fault(name, val)         constexpr RefReturnFault    <ThisFile, LiString(#name), ::name, val, LiString(#val)> name
+#	define wapi_ret(name, type, ...)         constexpr              __wapi_rops(type, __VA_ARGS__)< __wapi_info(name   ), ::name   > name
+#	define wapi_ret_W(name, type, ...)       constexpr              __wapi_rops(type, __VA_ARGS__)< __wapi_info(name##W), ::name##W> name
+#	define wapi_ret_A(name, type, ...)       constexpr              __wapi_rops(type, __VA_ARGS__)< __wapi_info(name##A), ::name##A> name
+#	define wapi_ret_WAO(name, type, ...)     constexpr RefReturnWAO<__wapi_rops(type, __VA_ARGS__), __wapi_info(name   ), ::name##W, ::name##A> name
+#	define wapi_ret_WAT(name, type, ...)     template<bool IsUnicode = Native::IsUnicode> \
+                                             constexpr RefReturnWAT<__wapi_rops(type, __VA_ARGS__), __wapi_info(name   ), ::name##W, ::name##A, IsUnicode> name
 
-/* Macro Windows API reflectors W/A Overload In One */
 
-#	define wapi_ret_WAO_direct(name)         constexpr RefReturnWA<RefReturnDirect   , ThisFile, LiString(#name), ::name##W, ::name##A> name
-#	define wapi_ret_WAO_true(name)           constexpr RefReturnWA<RefReturnTrue     , ThisFile, LiString(#name), ::name##W, ::name##A> name
-#	define wapi_ret_WAO_validhd(name)        constexpr RefReturnWA<RefReturnHandle   , ThisFile, LiString(#name), ::name##W, ::name##A> name
-#	define wapi_ret_WAO_notzero(name)        constexpr RefReturnWA<RefReturnNotZero  , ThisFile, LiString(#name), ::name##W, ::name##A> name
-#	define wapi_ret_WAO_notnull(name)        constexpr RefReturnWA<RefReturnNotNull  , ThisFile, LiString(#name), ::name##W, ::name##A> name
-#	define wapi_ret_WAO_success(name)        constexpr RefReturnWA<RefReturnSuccess  , ThisFile, LiString(#name), ::name##W, ::name##A> name
-#	define wapi_ret_WAO_positive(name)       constexpr RefReturnWA<RefReturnPositive , ThisFile, LiString(#name), ::name##W, ::name##A> name
-//#	define wapi_ret_WAO_fault(name, val)     constexpr RefReturnWA<RefReturnFault    , ThisFile, LiString(#name), ::name##W, ::name##A, val, LiString(#val)> name
-
-/* Macro Windows API reflectors A Version */
-
-#	define wapi_ret_A_direct(name)           wapi_ret_direct(name##A)
-#	define wapi_ret_A_true(name)             wapi_ret_true(name##A)
-#	define wapi_ret_A_validhd(name)          wapi_ret_validhd(name##A)
-#	define wapi_ret_A_notzero(name)          wapi_ret_notzero(name##A)
-#	define wapi_ret_A_notnull(name)          wapi_ret_notnull(name##A)
-#	define wapi_ret_A_success(name)          wapi_ret_success(name##A)
-#	define wapi_ret_A_positive(name)         wapi_ret_positive(name##A)
-
-/* Macro Windows API reflectors W Version */
-
-#	define wapi_ret_W_direct(name)           wapi_ret_direct(name##W)
-#	define wapi_ret_W_true(name)             wapi_ret_true(name##W)
-#	define wapi_ret_W_validhd(name)          wapi_ret_validhd(name##W)
-#	define wapi_ret_W_notzero(name)          wapi_ret_notzero(name##W)
-#	define wapi_ret_W_notnull(name)          wapi_ret_notnull(name##W)
-#	define wapi_ret_W_success(name)          wapi_ret_success(name##W)
-#	define wapi_ret_W_positive(name)         wapi_ret_positive(name##W)
-
-/* Macro Windows API reflectors W&A Versions */
-
-#	define wapi_ret_WA_direct(name)          wapi_ret_W_direct(name);    wapi_ret_A_direct(name)
-#	define wapi_ret_WA_true(name)            wapi_ret_true(name##W);     wapi_ret_true(name##A)
-#	define wapi_ret_WA_validhd(name)         wapi_ret_validhd(name##W);  wapi_ret_validhd(name##A)
-#	define wapi_ret_WA_notzero(name)         wapi_ret_notzero(name##W);  wapi_ret_notzero(name##A)
-#	define wapi_ret_WA_notnull(name)         wapi_ret_notnull(name##W);  wapi_ret_notnull(name##A)
-#	define wapi_ret_WA_success(name)         wapi_ret_success(name##W);  wapi_ret_success(name##A)
-#	define wapi_ret_WA_positive(name)        wapi_ret_positive(name##W); wapi_ret_positive(name##A)
-
-/* Macro Windows API reflectors W&A Versions With Template Selector */
-
-#	define WAT_selector(name)                template<bool IsUnicode = Native::IsUnicode> \
-                                             constexpr auto name = ValueIf<IsUnicode, name##W, name##A>;
-
-#	define wapi_ret_WAT_direct(name)         wapi_ret_WA_direct(name);   WAT_selector(name)
-#	define wapi_ret_WAT_true(name)           wapi_ret_WA_true(name);     WAT_selector(name)
-#	define wapi_ret_WAT_validhd(name)        wapi_ret_WA_validhd(name);  WAT_selector(name)
-#	define wapi_ret_WAT_notzero(name)        wapi_ret_WA_notzero(name);  WAT_selector(name)
-#	define wapi_ret_WAT_notnull(name)        wapi_ret_WA_notnull(name);  WAT_selector(name)
-#	define wapi_ret_WAT_success(name)        wapi_ret_WA_success(name);  WAT_selector(name)
-#	define wapi_ret_WAT_positive(name)       wapi_ret_WA_positive(name); WAT_selector(name)
-
-#	define wapi_ret(name, type, ...)         mx_call(mx_cat(wapi_ret_, type), name, ##__VA_ARGS__)
-#	define wapi_ret_WAO(name, type, ...)     mx_call(mx_cat(wapi_ret_WAO_, type), name, ##__VA_ARGS__)
-#	define wapi_ret_WAT(name, type, ...)     mx_call(mx_cat(wapi_ret_WAT_, type), name, ##__VA_ARGS__)
 
 /* Macro exception system reflect for Windows */
 
@@ -224,15 +181,15 @@
 
 // Macro Of Property
 
-#	define  wx_class_prop_set(type, name, set) inline auto&name(type value) ret_to_self(mx_kill_braces(set))
-#	define  wx_class_prop_get(type, name, get) inline type name(          ) const { mx_kill_braces(get); }
+#	define  wx_class_prop_set(type, name, set) inline auto&name(type value) ret_to_self(macro_kill_brace0(set))
+#	define  wx_class_prop_get(type, name, get) inline type name(          ) const { macro_kill_brace0(get); }
 
 #	define  class_prop_getas(type, name, get) wx_class_prop_get(type, name, (return get))
 #	define  class_prop_getto(type, name, get) wx_class_prop_get(type, name, (ret_to get))
-#	define  class_prop_getof(type, name, get) wx_class_prop_get(type, name, (type value; mx_kill_braces(get); return value))
+#	define  class_prop_getof(type, name, get) wx_class_prop_get(type, name, (type value; macro_kill_brace0(get); return value))
 
 #	define  class_prop_set(type, name, set) wx_class_prop_set(type, name, set)
-#	define  class_prop_get(type, name, d, get) mx_call(mx_cat(class_prop_get, d), type, name, get)
+#	define  class_prop_get(type, name, d, get) macro_call(macro_cat(class_prop_get, d), type, name, get)
 
 #	define  class_prop_map(type, name, d, get, set) \
 			class_prop_get(type, name, d, get); \

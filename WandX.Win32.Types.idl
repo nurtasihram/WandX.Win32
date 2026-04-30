@@ -1,5 +1,5 @@
 #pragma region KernalObject
-enum_flags(HandleAccess   , DWORD           ,
+enum_flags(KernalAccess   , DWORD           ,
 	       Delete         = DELETE          ,
 	       ReadCtl        = READ_CONTROL    ,
 	       WriteDAC       = WRITE_DAC       ,
@@ -15,7 +15,7 @@ using Handle = KernalObject<void>;
 
 class_chain_begin(KernalObject) {
 	proxy_basetype(KernalObject, HANDLE, O);
-	using Access = HandleAccess;
+	using Access = KernalAccess;
 
 	~KernalObject() ret_to(Close());
 
@@ -37,7 +37,6 @@ public: // Property - ProtectFromClose
 #pragma endregion
 
 #pragma region Heaps
-#pragma region Local
 enum_flags(LocalAllocFlags, UINT          ,
 		   Fixed          = LMEM_FIXED    ,
 		   Modify         = LMEM_MODIFY   ,
@@ -59,9 +58,6 @@ public:
 	static inline void Unlock(void *ptr) safe_ret_as(LocalUnlock(ptr));
 	static inline void AutoFree(void *&ptr) ret_to(if (ptr) (Free(ptr), ptr = O));
 } inline LocalHeap;
-#pragma endregion
-
-#pragma region Heap
 
 proxy_struct       (HeapSummaries, HEAP_SUMMARY        ) {
 	proxy_prop_size(               cb           , DWORD);
@@ -141,7 +137,6 @@ public: // Property - Summaries
 };
 using CHeap = ProxyView<Heap>;
 CHeap ThisHeap = Heap{};
-#pragma endregion
 
 template<class HeapType, class AnyType = void>
 class AutoPointer {

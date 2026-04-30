@@ -12,6 +12,9 @@ import WandX.Win32;
 import WandX.Win32.String;
 import WandX.Win32.Types;
 
+constexpr bool operator==(COORD c1, COORD c2) { return c1.X == c2.X && c1.Y == c2.Y; }
+constexpr bool operator!=(COORD c1, COORD c2) { return c1.X != c2.X || c1.Y != c2.Y; }
+
 static constexpr auto ThisFile = WandX::LiString("WandX.Win32.Console");
 
 export namespace WandX {
@@ -41,7 +44,7 @@ wapi_ret(SetConsoleCtrlHandler, true);
 #pragma endregion
 
 #pragma region ConsoleApi2.h
-wapi_ret_WAT(FillConsoleOutputCharacter, true);
+wapi_ret_WAO(FillConsoleOutputCharacter, true);
 wapi_ret(FillConsoleOutputAttribute, true);
 wapi_ret(GenerateConsoleCtrlEvent, true);
 wapi_ret(CreateConsoleScreenBuffer, validhd);
@@ -94,9 +97,6 @@ wapi_ret(GetConsoleProcessList, positive);
 #pragma endregion
 
 }
-
-constexpr bool operator==(COORD c1, COORD c2) ret_as(c1.X == c2.X && c1.Y == c2.Y);
-constexpr bool operator!=(COORD c1, COORD c2) ret_as(c1.X != c2.X || c1.Y != c2.Y);
 
 #include "WandX.Win32.Console.idl"
 

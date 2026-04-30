@@ -25,7 +25,9 @@ wapi_ret(QueueUserAPC2, true);
 wapi_ret(GetProcessTimes, true);
 wapi_ret(GetCurrentProcess, direct);
 wapi_ret(GetCurrentProcessId, direct);
-wapi_ret(ExitProcess, direct); // noreturn
+[[noreturn]] inline void ExitProcess(UINT uExitCode) {
+	::ExitProcess(uExitCode);
+}
 wapi_ret(TerminateProcess, true);
 wapi_ret(GetExitCodeProcess, true);
 wapi_ret(SwitchToThread, true);
@@ -38,7 +40,9 @@ wapi_ret(SetThreadPriority, true);
 wapi_ret(SetThreadPriorityBoost, true);
 wapi_ret(GetThreadPriorityBoost, true);
 wapi_ret(GetThreadPriority, fault, THREAD_PRIORITY_ERROR_RETURN);
-wapi_ret(ExitThread, direct); // noreturn
+[[noreturn]] inline void ExitThread(DWORD dwExitCode) {
+	::ExitThread(dwExitCode);
+}
 wapi_ret(TerminateThread, true);
 wapi_ret(GetExitCodeThread, true);
 // SuspendThread
@@ -204,7 +208,7 @@ public:
 	/* const */ class_method(Wait, DWORD, (DWORD dwMilliseconds = INFINITE), as(Native::WaitForSingleObject(self, dwMilliseconds) == WAIT_OBJECT_0));
 };
 
-enum_flags(EventAccess , HandleAccess       ,
+enum_flags(EventAccess , KernalAccess       ,
 		   All         = EVENT_ALL_ACCESS   ,
 		   Modify      = EVENT_MODIFY_STATE );
 class Event : public WaitableBase<Event> {
@@ -217,7 +221,7 @@ public:
 };
 using CEvent = ProxyView<Event>;
 
-enum_flags(MutexAccess  , HandleAccess       ,
+enum_flags(MutexAccess  , KernalAccess       ,
 		   All          = MUTEX_ALL_ACCESS   ,
 		   Modify       = MUTEX_MODIFY_STATE );
 class Mutex : public WaitableBase<Mutex> {
@@ -229,7 +233,7 @@ public:
 };
 using CMutex = ProxyView<Mutex>;
 
-enum_flags(SemaphoreAccess , HandleAccess           ,
+enum_flags(SemaphoreAccess , KernalAccess           ,
 		   All             = SEMAPHORE_ALL_ACCESS   ,
 		   Modify          = SEMAPHORE_MODIFY_STATE );
 class Semaphore : public WaitableBase<Semaphore> {
@@ -240,7 +244,7 @@ public:
 	class_method(Release, LONG, (LONG ReleaseCount), to(LONG preCount = 0, Native::ReleaseSemaphore(self, ReleaseCount, &preCount), preCount));
 };
 
-enum_flags(TimerAccess , HandleAccess       ,
+enum_flags(TimerAccess , KernalAccess       ,
 		   All         = TIMER_ALL_ACCESS   ,
 		   Modify      = TIMER_MODIFY_STATE );
 using WaitableTimerAccess = TimerAccess;

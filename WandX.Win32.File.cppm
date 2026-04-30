@@ -44,9 +44,10 @@ wapi_ret_WAO(CreateDirectory, true);
 #if defined(NTDDI_WIN11_GE) && (NTDDI_VERSION >= NTDDI_WIN11_GE) && !__GNUC__
 wapi_ret_WAO(CreateDirectory2, true);
 wapi_ret_WAO(RemoveDirectory2, true);
-wapi_ret_WAO(DeleteFile, true);
 wapi_ret_WAO(DeleteFile2, true);
 #endif
+wapi_ret_WAO(DeleteFile, true);
+// SetFileInformationByHandle
 #pragma endregion
 
 #pragma region WinBase.h (part)

@@ -115,8 +115,8 @@ public:
 	class_method(WriteAttributes, Int32U, (const ConsoleAttribute *pAttr, DWORD len, WandX::Point pos = 0), as(Native::WriteConsoleOutputAttribute(self, (const WORD *)pAttr, len, pos, &len), len));
 	class_method(ReadAttributes, Int32U, (ConsoleAttribute *pAttr, DWORD len, WandX::Point pos = 0), as(Native::ReadConsoleOutputAttribute(self, (WORD *)pAttr, len, pos, &len), len));
 
-	class_method(Fill, Int32U, (CHAR ch, DWORD len, WandX::Point pos = 0), as(Native::FillConsoleOutputCharacter<false>(self, ch, len, pos, &len), len));
-	class_method(Fill, Int32U, (WCHAR ch, DWORD len, WandX::Point pos = 0), as(Native::FillConsoleOutputCharacter<true>(self, ch, len, pos, &len), len));
+	class_method(Fill, Int32U, (CHAR ch, DWORD len, WandX::Point pos = 0), as(Native::FillConsoleOutputCharacter(self, ch, len, pos, &len), len));
+	class_method(Fill, Int32U, (WCHAR ch, DWORD len, WandX::Point pos = 0), as(Native::FillConsoleOutputCharacter(self, ch, len, pos, &len), len));
 
 	class_method(Write, Int32U, (LPCSTR pStr, DWORD len), as(Native::WriteConsole<false>(self, pStr, len, &len, O), len));
 	class_method(Write, Int32U, (LPCWSTR pStr, DWORD len), as(Native::WriteConsole<true>(self, pStr, len, &len, O), len));

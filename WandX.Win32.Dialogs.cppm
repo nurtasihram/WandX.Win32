@@ -19,7 +19,10 @@ namespace Native {
 
 //////////// ! -- TODO: Add exception system with CommDlgExtendedError -- !  ////////////
 
+#define GetLastError ::CommDlgExtendedError
+
 #pragma region CommDlg.h
+
 inline bool GetOpenFileName(LPOPENFILENAMEA lpofn) ret_as(::GetOpenFileNameA(lpofn));
 inline bool GetOpenFileName(LPOPENFILENAMEW lpofn) ret_as(::GetOpenFileNameW(lpofn));
 inline bool GetSaveFileName(LPOPENFILENAMEA lpofn) ret_as(::GetSaveFileNameA(lpofn));

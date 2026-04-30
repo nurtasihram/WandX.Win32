@@ -13,31 +13,58 @@ export namespace WandX {
 
 #pragma region WandX.Win32 API Wrappers
 
-template<auto file, auto name, auto fn,
-	auto GetLastError = ::GetLastError>
+template<auto file, auto GetLastError, auto name, auto fn>
 using RefReturnDirect = BridgeAPI<file, name, decltype(fn)>
 	::template Ref<fn>
 	::Passby;
-
-template<auto file, auto name, auto fn,
-	AssertOperatorType auto assert,
-	class NewRet = ReturnTypeOf<fn>,
-	auto GetLastError = ::GetLastError>
+template<auto file, auto GetLastError, auto name, auto fn>
+using RefNoReturn = BridgeAPI<file, name, decltype(fn)>
+	::template Ref<fn>
+	::NoReturn;
+template<auto file, auto GetLastError, auto name, auto fn,
+	AssertOperatorType auto assert>
 using RefReturnAssert = BridgeAPI<file, name, decltype(fn)>
 	::template Ref<fn>
-	::template AssertReturn<assert, NewRet, GetLastError>;
+	::template AssertReturn<assert, GetLastError>;
+template<auto file, auto GetLastError, auto name, auto fn,
+	AssertOperatorType auto assert>
+using RefReturnVoidAssert = BridgeAPI<file, name, decltype(fn)>
+	::template Ref<fn>
+	::template AssertReturn<assert, GetLastError, void>;
+
+template<auto file, auto GetLastError, auto name, auto fn>
+using RefReturnTrue = RefReturnVoidAssert<
+	file, GetLastError, name, fn,
+	AssertTrue>;
+template<auto file, auto GetLastError, auto name, auto fn>
+using RefReturnNotZero = RefReturnAssert<
+	file, GetLastError, name, fn,
+	AssertNotZero>;
+template<auto file, auto GetLastError, auto name, auto fn>
+using RefReturnNotNull = RefReturnAssert<
+	file, GetLastError, name, fn,
+	AssertNotNull>;
+template<auto file, auto GetLastError, auto name, auto fn>
+using RefReturnPositive = RefReturnAssert<
+	file, GetLastError, name, fn,
+	AssertPositive>;
+template<auto fault_val, auto fault_str>
+struct RefReturnFaultBy {
+	template<auto file, auto GetLastError, auto name, auto fn>
+	using Value = RefReturnAssert<
+		file, GetLastError, name, fn,
+		AssertFaultValue<fault_val, fault_str>>;
+};
 
 inline bool HandleNotInvalid(HANDLE h) { return h != INVALID_HANDLE_VALUE; }
 constexpr auto AssertHandleNotInvalid = AssertOperator<
-	HANDLE, AssertOps::CustomTest, HandleNotInvalid,
+	AssertOps::CustomTest, HandleNotInvalid,
 	LiString(" == INVALID_HANDLE_VALUE")>();
-template<auto file, auto name, auto fn,
-	auto GetLastError = ::GetLastError>
+template<auto file, auto GetLastError, auto name, auto fn>
 	requires(IsSame<ReturnTypeOf<fn>, HANDLE>)
 using RefReturnHandle = RefReturnAssert<
-	file, name, fn,
-	AssertHandleNotInvalid,
-	HANDLE, GetLastError>;
+	file, GetLastError, name, fn,
+	AssertHandleNotInvalid>;
 
 inline bool ResultSuccess(HRESULT hr) {
 	if (SUCCEEDED(hr)) return true;
@@ -45,65 +72,40 @@ inline bool ResultSuccess(HRESULT hr) {
 	return false;
 }
 constexpr auto AssertResultSuccess = AssertOperator<
-	HRESULT, AssertOps::CustomTest, ResultSuccess,
+	AssertOps::CustomTest, ResultSuccess,
 	LiString(" is failed")>();
-template<auto file, auto name, auto fn,
-	auto GetLastError = ::GetLastError>
+template<auto file, auto GetLastError, auto name, auto fn>
 	requires(IsSameSize<ReturnTypeOf<fn>, HRESULT>)
-using RefReturnSuccess = RefReturnAssert<
-	file, name, fn,
-	AssertResultSuccess,
-	HRESULT, GetLastError>;
-
-template<auto file, auto name, auto fn,
-	auto GetLastError = ::GetLastError>
-using RefReturnTrue = RefReturnAssert<
-	file, name, fn,
-	AssertTrue<ReturnTypeOf<fn>>,
-	void, GetLastError>;
-
-template<auto file, auto name, auto fn,
-	auto GetLastError = ::GetLastError>
-using RefReturnNotZero = RefReturnAssert<
-	file, name, fn,AssertNotZero<ReturnTypeOf<fn>>,
-	ReturnTypeOf<fn>, GetLastError>;
-
-template<auto file, auto name, auto fn,
-	auto GetLastError = ::GetLastError>
-using RefReturnNotNull = RefReturnAssert<
-	file, name, fn,AssertNotNull<ReturnTypeOf<fn>>,
-	ReturnTypeOf<fn>, GetLastError>;
-
-template<auto file, auto name, auto fn,
-	auto GetLastError = ::GetLastError>
-using RefReturnPositive = RefReturnAssert<
-	file, name, fn,AssertPositive<ReturnTypeOf<fn>>,
-	ReturnTypeOf<fn>, GetLastError>;
-
-template<auto file, auto name, auto fn,
-	ReturnTypeOf<fn> fault_val, auto fault_str,
-	auto GetLastError = ::GetLastError>
-using RefReturnFault = RefReturnAssert<
-	file, name, fn,
-	AssertFaultValue<ReturnTypeOf<fn>, fault_val, fault_str>,
-	ReturnTypeOf<fn>, GetLastError>;
+using RefReturnSuccess = RefReturnVoidAssert<
+	file, GetLastError, name, fn,
+	AssertResultSuccess>;
 
 ///
 
 template<auto fnW, auto fnA>
 concept WinAPIPair =
 	IsSame<ReturnTypeOf<fnW>, ReturnTypeOf<fnA>> &&
-	ParaCountOf(fnW) == ParaCountOf(fnA) &&
-	!InvokableAmbiguous<fnW, fnA>;
+	ParaCountOf(fnW) == ParaCountOf(fnA);
+//&&	!InvokableAmbiguous<fnW, fnA>;
 
 template<
-	template<auto file, auto name, auto fn, auto GetLastError> class RefReturnType,
-	auto file, auto name, auto fnW, auto fnA,
-	auto GetLastError = ::GetLastError>
+	template<auto file, auto GetLastError, auto name, auto fn> class RefReturnType,
+			 auto file, auto GetLastError, auto name, auto fnW, auto fnA>
 	requires(WinAPIPair<fnW, fnA>)
-using RefReturnWA = OverrideFunctor<
-	RefReturnType<file, name + "W", fnW, GetLastError>,
-	RefReturnType<file, name + "A", fnA, GetLastError>>;
+using RefReturnWAO = OverrideFunctor<
+	RefReturnType<file, GetLastError, name + "W", fnW>,
+	RefReturnType<file, GetLastError, name + "A", fnA>>;
+
+template<
+	template<auto file, auto GetLastError, auto name, auto fn> class RefReturnType,
+			 auto file, auto GetLastError, auto name, auto fnW, auto fnA,
+	bool IsUnicode>
+	requires(IsSame<decltype(fnW), decltype(fnA)>)
+using RefReturnWAT = TypeIf<
+	IsUnicode,
+	RefReturnType<file, GetLastError, name + "W", fnW>,
+	RefReturnType<file, GetLastError, name + "A", fnA>>;
+
 
 #pragma endregion
 

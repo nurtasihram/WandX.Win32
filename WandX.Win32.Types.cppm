@@ -39,13 +39,17 @@ wapi_ret(GetSystemTime, direct);
 wapi_ret(GetSystemTimeAsFileTime, direct);
 wapi_ret(GetLocalTime, direct);
 wapi_ret(IsUserCetAvailableInEnvironment, direct);
+#ifdef GetSystemLeapSecondInformation
 wapi_ret(GetSystemLeapSecondInformation, true);
+#endif
 // GetVersion - deprecated
 wapi_ret(SetLocalTime, true);
 wapi_ret(GetTickCount, direct);
 wapi_ret(GetTickCount64, direct);
 wapi_ret(GetSystemTimeAdjustment, true);
+#ifdef GetSystemTimeAdjustmentPrecise
 wapi_ret(GetSystemTimeAdjustmentPrecise, true);
+#endif
 wapi_ret_WAO(GetSystemDirectory, positive);
 wapi_ret_WAO(GetWindowsDirectory, positive);
 wapi_ret_WAO(GetSystemWindowsDirectory, positive);
@@ -64,17 +68,31 @@ wapi_ret(EnumSystemFirmwareTables, positive);
 wapi_ret(GetSystemFirmwareTable, positive);
 // DnsHostnameToComputerNameExW
 wapi_ret(GetPhysicallyInstalledSystemMemory, true);
+#ifdef SetComputerNameEx2W
 wapi_ret(SetComputerNameEx2W, true);
+#endif
 wapi_ret(SetSystemTimeAdjustment, true);
+#ifdef SetSystemTimeAdjustmentPrecise
 wapi_ret(SetSystemTimeAdjustmentPrecise, true);
+#endif
+#ifdef InstallELAMCertificateInfo
 wapi_ret(InstallELAMCertificateInfo, true);
+#endif
 wapi_ret(GetProcessorSystemCycleTime, true);
+#ifdef GetOsManufacturingMode
 wapi_ret(GetOsManufacturingMode, true);
+#endif
+#ifdef GetIntegratedDisplaySize
 wapi_ret(GetIntegratedDisplaySize, success);
+#endif
 wapi_ret_WAO(SetComputerName, true);
 wapi_ret(SetComputerNameExA, true);
+#ifdef GetDeveloperDriveEnablementState
 wapi_ret(GetDeveloperDriveEnablementState, fault, DeveloperDriveEnablementStateError);
+#endif
+#ifdef GetRuntimeAttestationReport
 wapi_ret(GetRuntimeAttestationReport, true);
+#endif
 #pragma endregion
 
 }
@@ -90,7 +108,7 @@ struct Point : public POINT {
 	constexpr Point(SIZE s) : POINT{ s.cx, s.cy } {}
 	constexpr Point(COORD c) : POINT{ c.X, c.Y } {}
 
-	constexpr operator LPARAM() const ret_as((LPARAM)this);
+			  operator LPARAM() const ret_as((LPARAM)this);
 	constexpr operator COORD () const ret_as({ (SHORT)x, (SHORT)y });
 	constexpr operator SIZE  () const ret_as({ x, y });
 	
@@ -130,9 +148,9 @@ struct Size : public SIZE {
 
 	constexpr auto Square() const ret_as(cx * cy);
 
-	constexpr operator LPARAM() const ret_as((LPARAM)this);
+			  operator LPARAM() const ret_as((LPARAM)this);
 	constexpr operator COORD () const ret_as({ (SHORT)cx, (SHORT)cy });
-	constexpr operator SIZE  () const ret_as({ cx, cy });
+	constexpr operator POINT () const ret_as({ cx, cy });
 
 	constexpr bool operator==(Size   p) const ret_as(p.cx == cx && p.cy == cy);
 	constexpr bool operator!=(Size   p) const ret_as(p.cx != cx || p.cy != cy);
@@ -207,8 +225,8 @@ struct Rect : public RECT {
 	constexpr auto yDiff() const ret_as(bottom - top);
 	constexpr WandX::Point Diff() const ret_as({ xDiff(), yDiff() });
 	
-	constexpr auto &xMove(long dx) ret_to_self(right += dx, left += dx);
-	constexpr auto &yMove(long dy) ret_to_self(bottom += dy, top += dy);
+	constexpr Rect &xMove(long dx) ret_to_self(right += dx, left += dx);
+	constexpr Rect &yMove(long dy) ret_to_self(bottom += dy, top += dy);
 
 	constexpr auto x0() const ret_as(left);
 	constexpr auto y0() const ret_as(top);
@@ -224,9 +242,9 @@ struct Rect : public RECT {
 	constexpr auto &RightTop   (Point p)       ret_to_self(right = p.x, top    = p.y);
 	constexpr auto &RightBottom(Point p)       ret_to_self(right = p.x, bottom = p.y);
 
+			  operator LPARAM    () const ret_as((LPARAM)this);
 	constexpr operator LPRECT    ()       ret_as(this);
 	constexpr operator LPCRECT   () const ret_as(this);
-	constexpr operator LPARAM    () const ret_as((LPARAM)this);
 	constexpr operator SIZE      () const ret_as(this->Size());
 //	constexpr operator MARGINS   () const ret_as({ left, right, top, bottom });
 	constexpr operator SMALL_RECT() const ret_as({ (SHORT)left, (SHORT)top, (SHORT)right, (SHORT)bottom });

@@ -22,7 +22,9 @@ wapi_ret_WAO(FindResourceEx, notnull); // FindResourceExA from WinBase.h
 inline int FindStringOrdinal(DWORD dwFindStringOrdinalFlags, LPCWSTR lpStringSource, int cchSource, LPCWSTR lpStringValue, int cchValue, BOOL bIgnoreCase)
 safe_ret_as(auto ret = ::FindStringOrdinal(dwFindStringOrdinalFlags, lpStringSource, cchSource, lpStringValue, cchValue, bIgnoreCase); ret >= 0, ret);
 wapi_ret(FreeLibrary, true);
-wapi_ret(FreeLibraryAndExitThread, direct);
+[[noreturn]] inline void FreeLibraryAndExitThread(HMODULE hLibModule, DWORD dwExitCode) {
+	::FreeLibraryAndExitThread(hLibModule, dwExitCode);
+}
 wapi_ret(FreeResource, true);
 wapi_ret_WAO(GetModuleFileName, positive);
 wapi_ret_WAO(GetModuleHandle, notnull);

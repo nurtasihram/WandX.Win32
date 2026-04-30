@@ -2,7 +2,7 @@
 struct PTTimes { FileTime CreationTime, ExitTime, KernelTime, UserTime; };
 
 #pragma region ThreadBase
-enum_flags(ThreadAccess       , HandleAccess                     ,
+enum_flags(ThreadAccess       , KernalAccess                     ,
 		   Resume             = THREAD_RESUME                    ,
 		   Terminate          = THREAD_TERMINATE                 ,
 		   SuspendResume      = THREAD_SUSPEND_RESUME            ,
@@ -690,7 +690,7 @@ public: // Property - Times
 	/* R */ inline auto Times() ret_to(PTTimes t; WandX::GetProcessTimes(self, &t.CreationTime, &t.ExitTime, &t.KernelTime, &t.UserTime), t);
 public: // Property - WorkingSetSize
 	/* W */ inline auto &WorkingSetSize(SIZE_T Min, SIZE_T Max) safe_ret_as_self(SetProcessWorkingSetSize(self, Min, Max));
-	/* R */ inline auto  WorkingSetSize() const safe_ret_to(struct mx_b2(SIZE_T Min, Max;) size, GetProcessWorkingSetSize(self, &size.Min, &size.Max), size);
+	/* R */ inline auto  WorkingSetSize() const safe_ret_to(struct macro_brace2(SIZE_T Min, Max;) size, GetProcessWorkingSetSize(self, &size.Min, &size.Max), size);
 public: // Property - HandleCount
 	/* R */ inline DWORD HandleCount() const ret_to(DWORD dwHandleCount; GetProcessHandleCount(self, &dwHandleCount), dwHandleCount);
 public: // Property - Immersive

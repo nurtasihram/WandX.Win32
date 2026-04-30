@@ -444,7 +444,7 @@ public:
 	/* R */ inline bool GetParts(int (&Slice)[Len]) const ret_as(Super::Send(SB_GETPARTS, Len, Slice));
 	/* R */ inline bool GetParts(int *pSlices, int Len) const ret_as(Super::Send(SB_GETPARTS, Len, pSlices));
 public: // Property - Borders
-	/* R */ inline auto Borders() const safe_ret_to(struct { int mx_b0(BorderH, BorderV, GapH); } borders, Super::Send(SB_GETBORDERS, 0, &borders), borders);
+	/* R */ inline auto Borders() const safe_ret_to(struct { int macro_brace0(BorderH, BorderV, GapH); } borders, Super::Send(SB_GETBORDERS, 0, &borders), borders);
 public: // Property - MinHeight
 	/* W */ inline auto&MinHeight(int MinHeight) ret_to_self(Super::Send(SB_SETMINHEIGHT, MinHeight));
 public: // Property - Simple
@@ -904,7 +904,7 @@ public: // Property - MaxSelCount
 	/* W */ inline auto&MaxSelCount(int count) safe_ret_as_child(Super::Send(MCM_SETMAXSELCOUNT, count));
 	/* R */	inline auto MaxSelCount() const ret_as(Super::template Send<int>(MCM_GETMAXSELCOUNT));
 public: // Property - SelRange
-//	/* W */ inline auto&SelRange(RangeOf<SYSTEMTIME> r) safe_ret_to_child(SYSTEMTIME s[2]{ mx_b0(r.min, r.max) }, Super::Send(MCM_SETSELRANGE, 0, s));
+//	/* W */ inline auto&SelRange(RangeOf<SYSTEMTIME> r) safe_ret_to_child(SYSTEMTIME s[2]{ macro_brace0(r.min, r.max) }, Super::Send(MCM_SETSELRANGE, 0, s));
 	/* R */ inline auto SelRange() const safe_ret_to(SYSTEMTIME s[2], Super::Send(MCM_GETSELRANGE, 0, s), RangeOf<SysTime>(s[0], s[1]));
 public: // Property - Today
 	/* W */ inline auto&Today(const SYSTEMTIME &s) ret_to_child(Super::Send(MCM_SETTODAY, 0, &s));
@@ -1268,7 +1268,7 @@ public:
 #pragma region Properties
 public: 
 	/* W */ inline auto &Sel(int to, int from) ret_to_child(Super::Send(EM_SETSEL, to, from));
-	/* R */ inline auto  Sel() const ret_to(struct { mx_b0(int to = 0, from = 0); } r; Super::Send(EM_GETSEL, &r.from, &r.to), r);
+	/* R */ inline auto  Sel() const ret_to(struct { macro_brace0(int to = 0, from = 0); } r; Super::Send(EM_GETSEL, &r.from, &r.to), r);
 public: 
 	/* W */ inline auto &Rect(WandX::Rect rc) ret_to_child(Super::Send(EM_SETRECT, O, rc));
 	/* R */ inline WandX::Rect Rect() const safe_ret_to(WandX::Rect rc, Super::Send(EM_GETRECT, O, &rc), rc);
@@ -1321,7 +1321,7 @@ public:
 //	/* R */ inline DWORD CaretIndex() const ret_as(Edit_GetCaretIndex(self));
 //public: 
 //	/* W */ inline auto &Zoom(int Numerator, int Denominator) ret_to_child(Edit_SetZoom(self, Numerator, Denominator));
-//	/* R */ inline auto  Zoom() const safe_ret_to(struct { mx_b0(int Numerator, Denominator); } z, Edit_GetZoom(self, &z.Numerator, &z.Denominator), z);
+//	/* R */ inline auto  Zoom() const safe_ret_to(struct { macro_brace0(int Numerator, Denominator); } z, Edit_GetZoom(self, &z.Numerator, &z.Denominator), z);
 //public: 
 //	/* R */ inline int FileLineIndex(int index) const ret_as(Edit_GetFileLineIndex(self, index));
 //public: 

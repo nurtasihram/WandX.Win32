@@ -22,7 +22,7 @@ public:
 	inline operator LARGE_INTEGER() const ret_as(reuse_cast<LARGE_INTEGER>(self));
 };
 
-enum_flags(FileAccess                   , HandleAccess              ,
+enum_flags(FileAccess                   , KernalAccess              ,
 		   Default                      = 0                         ,
 		   ReadData                     = FILE_READ_DATA            , // file & pipe
 		   ListDirectory                = FILE_LIST_DIRECTORY       , // directory
@@ -148,7 +148,7 @@ public:
 		inline auto &Security(LPSECURITY_ATTRIBUTES lpAttributes) ret_to_self(this->lpAttributes = lpAttributes);
 		inline auto &Template(HANDLE hTemplateFile) ret_to_self(this->hTemplateFile = hTemplateFile);
 		inline auto &Attributes(FileAttribute dwAttributes) ret_to_self(this->dwFlagsAndAttributes = dwAttributes);
-		inline auto &Flags(FileFlag dwFlags) ret_to_self(this->dwFlagsAndAttributes = dwFlags.yield());
+		//inline auto &Flags(FileFlag dwFlags) ret_to_self(this->dwFlagsAndAttributes = FileAttribute::value_cast(dwFlags.yield()));
 	public:
 		inline auto &CreateNew() ret_to_self(this->dwCreationDisposition = CREATE_NEW);
 		inline auto &CreateAlways() ret_to_self(this->dwCreationDisposition = CREATE_ALWAYS);
