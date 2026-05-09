@@ -157,7 +157,7 @@ wapi_ret_WAO(BuildTrusteeWithName, direct);
 wapi_ret_WAO(BuildTrusteeWithSid, direct);
 wapi_ret_WAO(BuildTrusteeWithObjectsAndSid, direct);
 wapi_ret_WAO(BuildTrusteeWithObjectsAndName, direct);
-//wapi_ret_WAO(GetTrusteeName, direct);
+wapi_ret_WAO(GetTrusteeName, direct);
 wapi_ret_WAO(GetTrusteeType, direct);
 wapi_ret_WAO(GetTrusteeForm, direct);
 #pragma endregion

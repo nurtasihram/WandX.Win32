@@ -45,12 +45,8 @@ wapi_ret(GetThreadPriority, fault, THREAD_PRIORITY_ERROR_RETURN);
 }
 wapi_ret(TerminateThread, true);
 wapi_ret(GetExitCodeThread, true);
-// SuspendThread
-inline DWORD SuspendThread(HANDLE hThread)
-safe_ret_as(auto res = ::SuspendThread(hThread); res >= 0, res);
-// ResumeThread
-inline DWORD ResumeThread(HANDLE hThread)
-safe_ret_as(auto res = ::ResumeThread(hThread); res >= 0, res);
+wapi_ret(SuspendThread, fault, (DWORD)-1);
+wapi_ret(ResumeThread, fault, (DWORD)-1);
 wapi_ret(TlsAlloc, fault, TLS_OUT_OF_INDEXES);
 wapi_ret(TlsGetValue, notnull);
 wapi_ret(TlsSetValue, true);
@@ -109,9 +105,7 @@ wapi_ret(SetThreadInformation, true);
 wapi_ret(IsProcessCritical, true);
 wapi_ret(SetProtectedPolicy, true);
 wapi_ret(QueryProtectedPolicy, true);
-// SetThreadIdealProcessor
-inline DWORD SetThreadIdealProcessor(HANDLE hThread, DWORD dwIdealProcessor)
-safe_ret_as(auto res = ::SetThreadIdealProcessor(hThread, dwIdealProcessor); res >= 0, res);
+wapi_ret(SetThreadIdealProcessor, fault, (DWORD)-1);
 wapi_ret(SetProcessInformation, true);
 wapi_ret(GetProcessInformation, true);
 wapi_ret(GetProcessShutdownParameters, true);
@@ -200,20 +194,12 @@ wapi_ret(QueryIoRateControlInformationJobObject, true);
 
 }
 
-template<class AnyChild>
-class WaitableBase : public KernalObject<AnyChild> {
-public:
-	using Super = KernalObject<AnyChild>;
-
-	/* const */ class_method(Wait, DWORD, (DWORD dwMilliseconds = INFINITE), as(Native::WaitForSingleObject(self, dwMilliseconds) == WAIT_OBJECT_0));
-};
-
 enum_flags(EventAccess , KernalAccess       ,
 		   All         = EVENT_ALL_ACCESS   ,
 		   Modify      = EVENT_MODIFY_STATE );
-class Event : public WaitableBase<Event> {
+class Event : public KernalObject<Event> {
 public:
-	using Super = WaitableBase<Event>;
+	using Super = KernalObject<Event>;
 
 	class_method(Set, void, (), to(Native::SetEvent(self)));
 	class_method(Reset, void, (), to(Native::ResetEvent(self)));
@@ -224,9 +210,9 @@ using CEvent = ProxyView<Event>;
 enum_flags(MutexAccess  , KernalAccess       ,
 		   All          = MUTEX_ALL_ACCESS   ,
 		   Modify       = MUTEX_MODIFY_STATE );
-class Mutex : public WaitableBase<Mutex> {
+class Mutex : public KernalObject<Mutex> {
 public:
-	using Super = WaitableBase<Mutex>;
+	using Super = KernalObject<Mutex>;
 	using Access = MutexAccess;
 
 	class_method(Release, void, (), to(Native::ReleaseMutex(self)));
@@ -236,9 +222,9 @@ using CMutex = ProxyView<Mutex>;
 enum_flags(SemaphoreAccess , KernalAccess           ,
 		   All             = SEMAPHORE_ALL_ACCESS   ,
 		   Modify          = SEMAPHORE_MODIFY_STATE );
-class Semaphore : public WaitableBase<Semaphore> {
+class Semaphore : public KernalObject<Semaphore> {
 public:
-	using Super = WaitableBase<Semaphore>;
+	using Super = KernalObject<Semaphore>;
 	using Access = SemaphoreAccess;
 
 	class_method(Release, LONG, (LONG ReleaseCount), to(LONG preCount = 0, Native::ReleaseSemaphore(self, ReleaseCount, &preCount), preCount));
@@ -247,18 +233,16 @@ public:
 enum_flags(TimerAccess , KernalAccess       ,
 		   All         = TIMER_ALL_ACCESS   ,
 		   Modify      = TIMER_MODIFY_STATE );
-using WaitableTimerAccess = TimerAccess;
-class WaitableTimer : public WaitableBase<WaitableTimer> {
+class Timer : public KernalObject<Timer> {
 public:
-	using Super = WaitableBase<WaitableTimer>;
+	using Super = KernalObject<Timer>;
 	using Access = TimerAccess;
 
 };
-using Timer = WaitableTimer;
 
-class PrivateNamespace : public KernalObject<PrivateNamespace> {
+class Namespace : public KernalObject<Namespace> {
 public:
-	using Super = KernalObject<PrivateNamespace>;
+	using Super = KernalObject<Namespace>;
 
 };
 

@@ -1,72 +1,5 @@
 
-#pragma region Atoms
-class Atom {
-	ATOM atom = 0;
-public:
-	Atom() {}
-	Atom(Nu) {}
-	Atom(LPCSTR lpString) : atom(WandX::AddAtom(lpString)) {}
-	Atom(LPCWSTR lpString) : atom(WandX::AddAtom(lpString)) {}
-	Atom(ATOM atom) : atom(atom) {}
-	~Atom() ret_to(Delete());
-public:
-	static inline Atom Find(LPCSTR lpString) ret_as(WandX::FindAtom(lpString));
-	static inline Atom Find(LPCWSTR lpString) ret_as(WandX::FindAtom(lpString));
-	inline void Delete() ret_to(if (atom) (WandX::DeleteAtom(atom), atom = 0));
-public: // Property - Name
-	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenClass>
-	/* R */ inline StringX<IsUnicode> Name() const {
-		StringX<IsUnicode> str(MaxLen);
-		auto len = WandX::GetAtomName(self, str, (int)MaxLen);
-		return right_cast(str.Resize(len));
-	}
-	template<SizeT MaxLen = MaxLenClass>
-	/* R */ inline StringA NameA() const ret_as(Name<false, MaxLen>());
-	template<SizeT MaxLen = MaxLenClass>
-	/* R */ inline StringW NameW() const ret_as(Name<true, MaxLen>());
-public:
-	inline operator bool() const ret_as(atom);
-	inline operator ATOM() const ret_as(atom);
-	inline operator LPCSTR() const ret_as(MAKEINTRESOURCEA(atom));
-	inline operator LPCWSTR() const ret_as(MAKEINTRESOURCEW(atom));
-};
-using CAtom = ProxyView<Atom>;
-class GlobalAtom {
-	ATOM atom = 0;
-public:
-	GlobalAtom() {}
-	GlobalAtom(Nu) {}
-	GlobalAtom(LPCSTR lpString) : atom(Find(lpString)) {}
-	GlobalAtom(LPCWSTR lpString) : atom(Find(lpString)) {}
-	GlobalAtom(ATOM atom) : atom(atom) {}
-	~GlobalAtom() ret_to(Delete());
-public:
-	static inline ProxyView<GlobalAtom> Find(LPCSTR lpString) ret_as(WandX::GlobalFindAtom(lpString));
-	static inline ProxyView<GlobalAtom> Find(LPCWSTR lpString) ret_as(WandX::GlobalFindAtom(lpString));
-	inline void Delete() {
-		if (atom)
-			WandX::GlobalDeleteAtom(atom);
-		atom = 0;
-	}
-public: // Property - Name
-	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenClass>
-	/* R */ inline StringX<IsUnicode> Name() const {
-		StringX<IsUnicode> str(MaxLen);
-		auto len = WandX::GetAtomName(self, str, (int)MaxLen);
-		return right_cast(str.Resize(len));
-	}
-	template<SizeT MaxLen = MaxLenClass>
-	/* R */ inline StringA NameA() const ret_as(Name<false, MaxLen>());
-	template<SizeT MaxLen = MaxLenClass>
-	/* R */ inline StringW NameW() const ret_as(Name<true, MaxLen>());
-public:
-	inline operator bool() const ret_as(atom);
-	inline operator ATOM() const ret_as(atom);
-	inline operator LPCSTR() const ret_as(MAKEINTRESOURCEA(atom));
-	inline operator LPCWSTR() const ret_as(MAKEINTRESOURCEW(atom));
-};
-using CGlobalAtom = ProxyView<GlobalAtom>;
-#pragma endregion
+
 
 #pragma region Monitor
 class MonitorInformations : public StructShim<MONITORINFO> {
@@ -1085,7 +1018,7 @@ public:
 
 #pragma region Message Procedure Reflect System
 protected: // Default Message Procedure
-	use_member(DefProc);
+	ref_member(DefProc);
 	static LRESULT CallDefProc(HWND hWnd, UINT msgid, WPARAM wParam, LPARAM lParam) {
 		if constexpr (member_DefProc_of<Child>::is_addressable) {
 			misdef_assert((!std::is_member_pointer_v<decltype(&Child::DefProc)>),
@@ -1105,7 +1038,7 @@ public: // Reflectors management
 #define CALL(name) pChild->On##name
 #define SEND(ret, msgid, wparam, lparam) pChild->On##name(wparam, lparam)
 #define MSG_TRANS(msgid, ret, name, argslist, args, send, call) \
-		private: use_member(On##name); \
+		private: ref_member(On##name); \
 		public: static constexpr bool User##name = member_On##name##_of<Child>::is_addressable; \
 		inline LRESULT CallOn##name argslist { \
 			using fn_type = ret argslist; \
@@ -1130,7 +1063,7 @@ public: // Reflectors management
 		inline operator bool() const ret_as(pChild);
 	};
 protected: // Message Procedure
-	use_member(Callback);
+	ref_member(Callback);
 	static LRESULT CALLBACK MainProc(HWND hWnd, UINT msgid, WPARAM wParam, LPARAM lParam) {
 		auto&Wnd = WindowBase::Attach(hWnd);
 		auto pChild = Wnd.UserData<Child *>();
@@ -1181,7 +1114,7 @@ protected: // Message Procedure
 protected: // Default Message Definitions
 	inline void OnDestroy() ret_to(WandX::PostQuitMessage(0));
 protected: // Message Procedure Exception System
-	use_member(OnCatch);
+	ref_member(OnCatch);
 	static inline wx_answer Catch(Child *pChild, const MsgException &err) {
 		if constexpr (member_OnCatch_of<AnyChild>::template compatible_to<wx_answer(MsgException)>)
 			ret_as(pChild->OnCatch(err))
@@ -1205,7 +1138,7 @@ protected: // Message Procedure Exception System
 			wx_answer_abort(err);
 		}
 	}
-	use_member(OnFinal);
+	ref_member(OnFinal);
 	static inline LRESULT Final(Child *pChild, const MsgException &err) {
 		if constexpr (member_OnFinal_of<AnyChild>::template compatible_to<LRESULT(MsgException)>)
 			ret_as(pChild->OnFinal(err))
@@ -1238,8 +1171,8 @@ public:
 #pragma region Class Management
 protected:
 	static ATOM _ClassAtom;
-	use_member(CClassNameA);
-	use_member(CClassNameW);
+	ref_member(CClassNameA);
+	ref_member(CClassNameW);
 public:
 	static inline auto&CClassNameA() {
 		if constexpr (member_CClassNameA_of<AnyChild>::template compatible_to<StringA(AnyChild:: *)()>)
@@ -1309,7 +1242,7 @@ private:
 		ret_as(_Class)
 	}
 private:
-	use_member(Register);
+	ref_member(Register);
 	static inline ATOM DefRegister() {
 		if (_ClassAtom) return _ClassAtom;
 		return _ClassAtom = DefCClass().Register();

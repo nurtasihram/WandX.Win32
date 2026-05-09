@@ -20,7 +20,8 @@ class_chain_begin(KernalObject) {
 	~KernalObject() ret_to(Close());
 
 	class_method(Close, void, (), to(Native::CloseHandle(self); proxy_obj = O));
-	class_method(Compare, bool, (HANDLE h), as(Native::CompareObjectHandles(self, h))); /* const */
+	/* const */ class_method(Compare, bool, (HANDLE h), as(Native::CompareObjectHandles(self, h))); /* const */
+	///* const */ class_method(Wait, DWORD, (DWORD dwMilliseconds = INFINITE), as(Native::WaitForSingleObject(self, dwMilliseconds) == WAIT_OBJECT_0));
 
 	//inline auto CopyTo() DuplicateHandle
 

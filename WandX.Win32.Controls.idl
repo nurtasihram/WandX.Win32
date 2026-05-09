@@ -80,7 +80,7 @@ public:
 	using Super = WindowBase<AnyChild>;
 protected:
 	SFINAE_Window(AnyChild);
-	use_member(CtlClassName);
+	ref_member(CtlClassName);
 	template<bool IsUnicode, class Style, class StyleEx>
 	using CreateStructX = Super::template CreateStructX<IsUnicode, Style, StyleEx>;
 	template<class Style, class StyleEx>

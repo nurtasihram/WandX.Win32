@@ -16,6 +16,19 @@ static constexpr auto ThisFile = WandX::LiString("WandX.Win32.Types");
 export namespace WandX {
 namespace Native {
 
+#pragma region WinBase.h
+// InitAtomTable
+wapi_ret(DeleteAtom, true);
+wapi_ret_WAO(AddAtom, positive);
+wapi_ret_WAO(FindAtom, positive);
+wapi_ret_WAO(GetAtomName, positive);
+wapi_ret(GlobalDeleteAtom, true);
+wapi_ret_WAO(GlobalAddAtom, positive);
+wapi_ret_WAO(GlobalAddAtomEx, positive);
+wapi_ret_WAO(GlobalFindAtom, positive);
+wapi_ret_WAO(GlobalGetAtomName, positive);
+#pragma endregion
+
 #pragma region DateTimeApi.h
 wapi_ret_WAO(GetDateFormat, positive);
 wapi_ret_WAO(GetTimeFormat, positive);
@@ -108,7 +121,6 @@ struct Point : public POINT {
 	constexpr Point(SIZE s) : POINT{ s.cx, s.cy } {}
 	constexpr Point(COORD c) : POINT{ c.X, c.Y } {}
 
-			  operator LPARAM() const ret_as((LPARAM)this);
 	constexpr operator COORD () const ret_as({ (SHORT)x, (SHORT)y });
 	constexpr operator SIZE  () const ret_as({ x, y });
 	
@@ -148,7 +160,6 @@ struct Size : public SIZE {
 
 	constexpr auto Square() const ret_as(cx * cy);
 
-			  operator LPARAM() const ret_as((LPARAM)this);
 	constexpr operator COORD () const ret_as({ (SHORT)cx, (SHORT)cy });
 	constexpr operator POINT () const ret_as({ cx, cy });
 
@@ -242,7 +253,6 @@ struct Rect : public RECT {
 	constexpr auto &RightTop   (Point p)       ret_to_self(right = p.x, top    = p.y);
 	constexpr auto &RightBottom(Point p)       ret_to_self(right = p.x, bottom = p.y);
 
-			  operator LPARAM    () const ret_as((LPARAM)this);
 	constexpr operator LPRECT    ()       ret_as(this);
 	constexpr operator LPCRECT   () const ret_as(this);
 	constexpr operator SIZE      () const ret_as(this->Size());
@@ -282,6 +292,54 @@ struct Rect : public RECT {
 };
 inline Rect operator+(Point p, const Rect &r) ret_as(r + p);
 inline Rect operator-(Point p, const Rect &r) ret_as(-(r - p));
+#pragma endregion
+
+#pragma region Atoms
+class Atom {
+	ATOM atom = 0;
+	~Atom() ret_to(Delete());
+
+	static inline Atom Find(LPCSTR lpString) ret_as(WandX::FindAtom(lpString));
+	static inline Atom Find(LPCWSTR lpString) ret_as(WandX::FindAtom(lpString));
+	inline void Delete() ret_to(if (atom) (WandX::DeleteAtom(atom), atom = 0));
+public: // Property - Name
+	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringX<IsUnicode> Name() const {
+		StringX<IsUnicode> str(MaxLen);
+		auto len = WandX::GetAtomName(self, str, (int)MaxLen);
+		return right_cast(str.Resize(len));
+	}
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringA NameA() const ret_as(Name<false, MaxLen>());
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringW NameW() const ret_as(Name<true, MaxLen>());
+
+};
+class GlobalAtom {
+	ATOM atom = 0;
+
+	~GlobalAtom() ret_to(Delete());
+
+	static inline ProxyView<GlobalAtom> Find(LPCSTR lpString) ret_as(WandX::GlobalFindAtom(lpString));
+	static inline ProxyView<GlobalAtom> Find(LPCWSTR lpString) ret_as(WandX::GlobalFindAtom(lpString));
+	inline void Delete() {
+		if (atom)
+			WandX::GlobalDeleteAtom(atom);
+		atom = 0;
+	}
+public: // Property - Name
+	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringX<IsUnicode> Name() const {
+		StringX<IsUnicode> str(MaxLen);
+		auto len = WandX::GetAtomName(self, str, (int)MaxLen);
+		return right_cast(str.Resize(len));
+	}
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringA NameA() const ret_as(Name<false, MaxLen>());
+	template<SizeT MaxLen = MaxLenClass>
+	/* R */ inline StringW NameW() const ret_as(Name<true, MaxLen>());
+
+};
 #pragma endregion
 
 #include "WandX.Win32.Types.idl"
