@@ -15,12 +15,15 @@ static constexpr auto ThisFile = WandX::LiString("WandX.Win32.Resources");
 export namespace WandX {
 namespace Native {
 
+#pragma region WinUser.h
+wapi_ret_WAO(LoadString, natural);
+#pragma endregion
+
 #pragma region LibLoaderApi.h
 wapi_ret(DisableThreadLibraryCalls, true);
 wapi_ret_WAO(FindResource, notnull); // FindResourceA from WinBase.h
 wapi_ret_WAO(FindResourceEx, notnull); // FindResourceExA from WinBase.h
-inline int FindStringOrdinal(DWORD dwFindStringOrdinalFlags, LPCWSTR lpStringSource, int cchSource, LPCWSTR lpStringValue, int cchValue, BOOL bIgnoreCase)
-safe_ret_as(auto ret = ::FindStringOrdinal(dwFindStringOrdinalFlags, lpStringSource, cchSource, lpStringValue, cchValue, bIgnoreCase); ret >= 0, ret);
+wapi_ret(FindStringOrdinal, natural);
 wapi_ret(FreeLibrary, true);
 [[noreturn]] inline void FreeLibraryAndExitThread(HMODULE hLibModule, DWORD dwExitCode) {
 	::FreeLibraryAndExitThread(hLibModule, dwExitCode);
@@ -33,11 +36,6 @@ wapi_ret(GetProcAddress, notnull);
 wapi_ret_WAO(LoadLibrary, notnull);
 wapi_ret_WAO(LoadLibraryEx, notnull);
 wapi_ret(LoadResource, notnull);
-// from WinUser.h
-inline int LoadString(HINSTANCE hInstance, UINT uID, LPSTR lpBuffer, int cchBufferMax)
-safe_ret_as(auto ret = ::LoadStringA(hInstance, uID, lpBuffer, cchBufferMax); ret >= 0, ret);
-inline int LoadString(HINSTANCE hInstance, UINT uID, PWSTR lpBuffer, int cchBufferMax)
-safe_ret_as(auto ret = ::LoadStringW(hInstance, uID, lpBuffer, cchBufferMax); ret >= 0, ret);
 wapi_ret(LockResource, notnull);
 wapi_ret(SizeofResource, positive);
 wapi_ret(AddDllDirectory, notnull);

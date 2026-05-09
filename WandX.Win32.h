@@ -195,6 +195,18 @@
 			class_prop_get(type, name, d, get); \
 			class_prop_set(type, name, set)
 
+#	define class_prop_strfix_getas_WAO(name, maxlen, body) \
+	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = maxlen> \
+	inline StringX<IsUnicode> name() const { \
+		StringX<IsUnicode> value(MaxLen); \
+		auto len = body; \
+		return right_cast(value.Resize(len)); \
+	} \
+	template<SizeT MaxLen = maxlen> const \
+	inline StringA name##A() const ret_as(name<false, MaxLen>()); \
+	template<SizeT MaxLen = maxlen> const \
+	inline StringW name##W() const ret_as(name<true, MaxLen>())
+
 //
 
 #	define  class_method(name, ret, arg, body) inline ret name arg ret_##body
@@ -255,13 +267,6 @@ import WandX.Win32;
 #undef BeginUpdateResource
 #undef UpdateResource
 #undef EndUpdateResource
-#undef GlobalAddAtom
-#undef GlobalAddAtomEx
-#undef GlobalFindAtom
-#undef GlobalGetAtomName
-#undef AddAtom
-#undef FindAtom
-#undef GetAtomName
 #undef GetProfileInt
 #undef GetProfileString
 #undef WriteProfileString

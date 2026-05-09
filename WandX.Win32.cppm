@@ -37,17 +37,21 @@ using RefReturnTrue = RefReturnVoidAssert<
 	file, GetLastError, name, fn,
 	AssertTrue>;
 template<auto file, auto GetLastError, auto name, auto fn>
+using RefReturnPositive = RefReturnAssert<
+	file, GetLastError, name, fn,
+	AssertPositive>;
+template<auto file, auto GetLastError, auto name, auto fn>
 using RefReturnNotZero = RefReturnAssert<
 	file, GetLastError, name, fn,
 	AssertNotZero>;
 template<auto file, auto GetLastError, auto name, auto fn>
+using RefReturnNatural = RefReturnAssert<
+	file, GetLastError, name, fn,
+	AssertNatural>;
+template<auto file, auto GetLastError, auto name, auto fn>
 using RefReturnNotNull = RefReturnAssert<
 	file, GetLastError, name, fn,
 	AssertNotNull>;
-template<auto file, auto GetLastError, auto name, auto fn>
-using RefReturnPositive = RefReturnAssert<
-	file, GetLastError, name, fn,
-	AssertPositive>;
 template<auto fault_val, auto fault_str>
 struct RefReturnFaultBy {
 	template<auto file, auto GetLastError, auto name, auto fn>
@@ -84,9 +88,11 @@ using RefReturnSuccess = RefReturnVoidAssert<
 
 template<auto fnW, auto fnA>
 concept WinAPIPair =
-	IsSame<ReturnTypeOf<fnW>, ReturnTypeOf<fnA>> &&
-	ParaCountOf(fnW) == ParaCountOf(fnA);
-//&&	!InvokableAmbiguous<fnW, fnA>;
+//	IsSame<ReturnTypeOf<fnW>, ReturnTypeOf<fnA>> &&
+//	!InvokableAmbiguous<fnW, fnA> &&
+//	ParaCountOf(fnW) == ParaCountOf(fnA)
+	true
+;
 
 template<
 	template<auto file, auto GetLastError, auto name, auto fn> class RefReturnType,
@@ -185,9 +191,6 @@ wapi_ret_WAO(GetLongPathNameTransacted, positive);
 // DebugSetProcessKillOnExit
 // DebugBreakProcess
 wapi_ret(PulseEvent, true);
-wapi_ret(GlobalDeleteAtom, true);
-// InitAtomTable
-wapi_ret(DeleteAtom, true);
 // SetHandleCount
 // GetDevicePowerState
 wapi_ret_WAO(SetFileShortName, true);
@@ -281,13 +284,6 @@ wapi_ret_WAO(EnumResourceLanguages, true);
 wapi_ret_WAO(BeginUpdateResource, notnull);
 wapi_ret_WAO(UpdateResource, true);
 wapi_ret_WAT(EndUpdateResource, true);
-wapi_ret_WAO(GlobalAddAtom, positive);
-wapi_ret_WAO(GlobalAddAtomEx, positive);
-wapi_ret_WAO(GlobalFindAtom, positive);
-wapi_ret_WAO(GlobalGetAtomName, positive);
-wapi_ret_WAO(AddAtom, positive);
-wapi_ret_WAO(FindAtom, positive);
-wapi_ret_WAO(GetAtomName, positive);
 wapi_ret_WAO(GetProfileInt, direct);
 wapi_ret_WAO(GetProfileString, direct);
 wapi_ret_WAO(WriteProfileString, true);

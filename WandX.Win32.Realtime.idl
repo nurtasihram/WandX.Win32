@@ -138,7 +138,7 @@ public:
 	};
 	inline CreateStruct Create() retchild;
 protected: // Thread Procedure
-	use_member(OnRun);
+	ref_member(OnRun);
 	static DWORD WINAPI _ThrProc(LPVOID lpChild) {
 		auto pChild = static_cast<Child *>(lpChild);
 	retry:
@@ -160,7 +160,7 @@ protected: // Thread Procedure
 		return -2; // unreachable
 	}
 protected: // Thread Procedure Exception System
-	use_member(OnCatch);
+	ref_member(OnCatch);
 	static inline wx_answer Catch(Child *pChild, const Exception &err) {
 		if constexpr (member_OnCatch_of<AnyChild>::template compatible_to<wx_answer(Exception)>)
 			ret_as(pChild->OnCatch(err))
@@ -184,7 +184,7 @@ protected: // Thread Procedure Exception System
 			wx_answer_abort(err);
 		}
 	}
-	use_member(OnFinal);
+	ref_member(OnFinal);
 	static inline DWORD Final(Child *pChild, const Exception &err) {
 		if constexpr (member_OnFinal_of<AnyChild>::template compatible_to<DWORD(Exception)>)
 			ret_as(pChild->OnFinal(err))

@@ -264,20 +264,8 @@ public:
 	//template<SizeT MaxLen = MaxLenTitle>
 	///* R */ inline auto  TitleW() const ret_as(Title<true, MaxLen>());
 
-#	define class_prop_strfix_getas_WAO(name, maxlen, body) \
-	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = maxlen> \
-	inline StringX<IsUnicode> name() const { \
-		StringX<IsUnicode> str(MaxLen); \
-		auto len = body; \
-		return right_cast(str.Resize(len)); \
-	} \
-	template<SizeT MaxLen = maxlen> const \
-	inline StringA name##A() const ret_as(name<false, MaxLen>()); \
-	template<SizeT MaxLen = maxlen> const \
-	inline StringW name##W() const ret_as(name<true, MaxLen>())
-
 	class_prop_strfix_getas_WAO(OriginalTitle, MaxLenTitle,
-								(Native::GetConsoleOriginalTitle(str, (int)MaxLen)));
+								(Native::GetConsoleOriginalTitle(value, (int)MaxLen)));
 
 
 	class_prop_map(UINT, CodePage, as,

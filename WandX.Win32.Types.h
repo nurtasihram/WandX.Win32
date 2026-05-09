@@ -17,3 +17,12 @@ import WandX.Win32.Types;
 #undef GetComputerNameEx
 #undef GetVersionEx
 #undef SetComputerName
+
+// from WinBase.h
+#undef GlobalAddAtom
+#undef GlobalAddAtomEx
+#undef GlobalFindAtom
+#undef GlobalGetAtomName
+#undef AddAtom
+#undef FindAtom
+#undef GetAtomName

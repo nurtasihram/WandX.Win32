@@ -17,17 +17,16 @@ import WandX.Win32;
 
 static constexpr auto ThisFile = WandX::LiString("WandX.Win32.String");
 
-namespace WandX::Native {
+export namespace WandX {
+namespace Native {
 
 #pragma region StringApiSet.h
 wapi_ret(CompareStringEx, notzero);
 wapi_ret(CompareStringOrdinal, notzero);
 wapi_ret_WAO(CompareString, notzero); // CompareStringA from WinNls.h
 wapi_ret_WAO(FoldString, positive); // FoldStringA from WinNls.h
-
 wapi_ret_WAO(GetStringTypeEx, true); // GetStringTypeExA from WinNls.h
-inline void GetStringType(DWORD dwInfoType, LPCWCH lpSrcStr, int cchSrc, LPWORD lpCharType)
-	safe_ret_as(::GetStringTypeW(dwInfoType, lpSrcStr, cchSrc, lpCharType));
+wapi_ret_WAO(GetStringType, true); // GetStringTypeA from WinNls.h
 wapi_ret(MultiByteToWideChar, positive);
 wapi_ret(WideCharToMultiByte, positive);
 #pragma endregion
@@ -66,8 +65,6 @@ wapi_ret_WAO(StringCbLength, success);
 #pragma endregion
 
 }
-
-export namespace WandX {
 
 template<bool IsUnicode>
 using XCHAR = TypeIf<IsUnicode, WCHAR, CHAR>;
