@@ -9,8 +9,8 @@ export module WandX.Win32.Console;
 
 import WandX;
 import WandX.Win32;
-import WandX.Win32.String;
 import WandX.Win32.Types;
+import WandX.Win32.String;
 
 constexpr bool operator==(COORD c1, COORD c2) { return c1.X == c2.X && c1.Y == c2.Y; }
 constexpr bool operator!=(COORD c1, COORD c2) { return c1.X != c2.X || c1.Y != c2.Y; }

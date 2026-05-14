@@ -10,7 +10,6 @@ import WandX.Win32.String;
 #undef CompareString
 #undef FoldString
 #undef GetStringTypeEx
-#pragma endregion
 
 // from StrSafe.h
 #undef StringCchCopy
@@ -43,3 +42,6 @@ import WandX.Win32.String;
 #undef StringCbGetsEx
 #undef StringCchLength
 #undef StringCbLength
+
+// from WinBase.h
+#undef FormatMessage

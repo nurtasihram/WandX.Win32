@@ -130,14 +130,14 @@
 #      define _NTDDI_INFO                     _WX_NTDDI_NAME " - " macro_str(NTDDI_VERSION)  //
 //-------------------------------- _WX_COMPILATION_INFO ----------------------------------//
 #             define                          _WX_COMPILATION_INFO                         \
-			  "Compiled Date: "               _WX_COMPILED_TIME                       "\n" \
-			  "C++ Standard:  "               _WX_CPP_STANDARD                        "\n" \
-			  "Char Mode:     "               _WX_CHAR_MODE                           "\n" \
-			  "Build Mode:    "               _WX_BUILD_MODE                          "\n" \
-			  "Platform Bits: "               _WX_PLATFORM_BITS                       "\n" \
-			  "Architecture:  "               _WX_ARCHITECTURE                        "\n" \
-			  "Compiler:      "               _WX_COMPILER                            "\n" \
-			  "NTDDI Version: "               _WX_NTDDI_NAME                              //
+              "Compiled Date: "               _WX_COMPILED_TIME                       "\n" \
+              "C++ Standard:  "               _WX_CPP_STANDARD                        "\n" \
+              "Char Mode:     "               _WX_CHAR_MODE                           "\n" \
+              "Build Mode:    "               _WX_BUILD_MODE                          "\n" \
+              "Platform Bits: "               _WX_PLATFORM_BITS                       "\n" \
+              "Architecture:  "               _WX_ARCHITECTURE                        "\n" \
+              "Compiler:      "               _WX_COMPILER                            "\n" \
+              "NTDDI Version: "               _WX_NTDDI_NAME                              //
 #pragma endregion //////////////////////////////////////////////////////////////////////////
 
 #ifdef WANDX_CPPM_EXPORT_NATIVE
@@ -168,8 +168,6 @@
 #	define wapi_ret_WAT(name, type, ...)     template<bool IsUnicode = Native::IsUnicode> \
                                              constexpr RefReturnWAT<__wapi_rops(type, __VA_ARGS__), __wapi_info(name   ), ::name##W, ::name##A, IsUnicode> name
 
-
-
 /* Macro exception system reflect for Windows */
 
 #	define wx_throw_line_nt(sent) throw WandX::Exception(__FILE__, __FUNCTION__, #sent, __LINE__, GetLastError())
@@ -177,39 +175,30 @@
 
 #	pragma endregion
 
-#	pragma region ////////////////////////
+#	pragma region
 
-// Macro Of Property
-
-#	define  wx_class_prop_set(type, name, set) inline auto&name(type value) ret_to_self(macro_kill_brace0(set))
-#	define  wx_class_prop_get(type, name, get) inline type name(          ) const { macro_kill_brace0(get); }
-
-#	define  class_prop_getas(type, name, get) wx_class_prop_get(type, name, (return get))
-#	define  class_prop_getto(type, name, get) wx_class_prop_get(type, name, (ret_to get))
-#	define  class_prop_getof(type, name, get) wx_class_prop_get(type, name, (type value; macro_kill_brace0(get); return value))
-
-#	define  class_prop_set(type, name, set) wx_class_prop_set(type, name, set)
-#	define  class_prop_get(type, name, d, get) macro_call(macro_cat(class_prop_get, d), type, name, get)
-
-#	define  class_prop_map(type, name, d, get, set) \
-			class_prop_get(type, name, d, get); \
-			class_prop_set(type, name, set)
-
+// Macro of string property
 #	define class_prop_strfix_getas_WAO(name, maxlen, body) \
-	template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = maxlen> \
-	inline StringX<IsUnicode> name() const { \
-		StringX<IsUnicode> value(MaxLen); \
-		auto len = body; \
-		return right_cast(value.Resize(len)); \
-	} \
-	template<SizeT MaxLen = maxlen> const \
-	inline StringA name##A() const ret_as(name<false, MaxLen>()); \
-	template<SizeT MaxLen = maxlen> const \
-	inline StringW name##W() const ret_as(name<true, MaxLen>())
+    template<bool IsUnicode = Native::IsUnicode, SizeT MaxLen = maxlen> \
+    inline StringX<IsUnicode> name() const { \
+        StringX<IsUnicode> value(MaxLen); \
+        auto len = body; \
+        return right_cast(value.Resize(len)); \
+    } \
+    template<SizeT MaxLen = maxlen> const \
+    inline StringA name##A() const ret_as(name<false, MaxLen>()); \
+    template<SizeT MaxLen = maxlen> const \
+    inline StringW name##W() const ret_as(name<true, MaxLen>())
 
-//
-
-#	define  class_method(name, ret, arg, body) inline ret name arg ret_##body
+// proxy struct WAT
+#define proxy_structWAT(name, struct_name) \
+    template<bool IsUnicode = Native::IsUnicode> \
+    struct name##X; \
+    using  name    = name##X<>; \
+    using  name##A = name##X<false>; \
+    using  name##W = name##X<true>; \
+    template<bool IsUnicode> \
+    struct name##X final : WandX::ProxyCStruct<name, TypeIf<IsUnicode, struct_name##W, struct_name##A>>
 
 #	pragma endregion
 
@@ -222,9 +211,9 @@
 /* Macro string branch selector */
 #	define locale_symbolx(name)     static constexpr auto name = AnyX<IsUnicode>(name##W, name##A)
 #	define const_stringx(name, str) static constexpr auto name##A = str; \
-									static constexpr auto name##W = L##str
+                                    static constexpr auto name##W = L##str
 #	define auto_stringx(name, str)  const_stringx(name, str); \
-									locale_symbolx(name)
+                                    locale_symbolx(name)
 #	define structx(name)            TypeIf<IsUnicode, name##W, name##A>
 #	define using_structx(name)      using name = TypeIf<IsUnicode, name##W, name##A>
 
@@ -238,274 +227,3 @@ import WandX.Win32;
 
 #undef min
 #undef max
-
-#pragma region WinBase.h
-#undef GetBinaryType
-#undef GetShortPathName
-#undef GetLongPathNameTransacted
-#undef SetEnvironmentStrings
-#undef SetFileShortName
-#undef FormatMessage
-#undef CreateMailslot
-#undef EncryptFile
-#undef DecryptFile
-#undef FileEncryptionStatus
-#undef OpenEncryptedFileRaw
-#undef CreateFileMapping
-#undef CreateFileMappingNuma
-#undef OpenFileMapping
-#undef GetLogicalDriveStrings
-#undef QueryFullProcessImageName
-#undef GetFirmwareEnvironmentVariable
-#undef GetFirmwareEnvironmentVariableEx
-#undef SetFirmwareEnvironmentVariable
-#undef SetFirmwareEnvironmentVariableEx
-#undef FindResource
-#undef FindResourceEx
-#undef EnumResourceTypes
-#undef EnumResourceLanguages
-#undef BeginUpdateResource
-#undef UpdateResource
-#undef EndUpdateResource
-#undef GetProfileInt
-#undef GetProfileString
-#undef WriteProfileString
-#undef GetProfileSection
-#undef WriteProfileSection
-#undef GetPrivateProfileInt
-#undef GetPrivateProfileString
-#undef WritePrivateProfileString
-#undef GetPrivateProfileSection
-#undef WritePrivateProfileSection
-#undef GetPrivateProfileSectionNames
-#undef GetPrivateProfileStruct
-#undef WritePrivateProfileStruct
-#undef SetDllDirectory
-#undef GetDllDirectory
-#undef CreateDirectoryEx
-#undef CreateDirectoryTransacted
-#undef RemoveDirectoryTransacted
-#undef GetFullPathNameTransacted
-#undef DefineDosDevice
-#undef QueryDosDevice
-#undef CreateFileTransacted
-#undef SetFileAttributesTransacted
-#undef GetFileAttributesTransacted
-#undef GetCompressedFileSizeTransacted
-#undef DeleteFileTransacted
-#undef CheckNameLegalDOS8Dot3
-#undef FindFirstFileTransacted
-#undef CopyFile
-#undef CopyFileEx
-#undef CopyFileTransacted
-#undef MoveFile
-#undef MoveFileEx
-#undef MoveFileWithProgress
-#undef MoveFileTransacted
-#undef ReplaceFile
-#undef CreateHardLink
-#undef CreateHardLinkTransacted
-#undef CreateNamedPipe
-#undef GetNamedPipeHandleState
-#undef CallNamedPipe
-#undef WaitNamedPipe
-#undef GetNamedPipeClientComputerName
-#undef SetVolumeLabel
-#undef ClearEventLog
-#undef BackupEventLog
-#undef OpenEventLog
-#undef RegisterEventSource
-#undef OpenBackupEventLog
-#undef ReadEventLog
-#undef ReportEvent
-#undef AccessCheckAndAuditAlarm
-#undef AccessCheckByTypeAndAuditAlarm
-#undef AccessCheckByTypeResultListAndAuditAlarm
-#undef AccessCheckByTypeResultListAndAuditAlarmByHandle
-#undef ObjectOpenAuditAlarm
-#undef ObjectPrivilegeAuditAlarm
-#undef ObjectCloseAuditAlarm
-#undef ObjectDeleteAuditAlarm
-#undef PrivilegedServiceAuditAlarm
-#undef SetFileSecurity
-#undef GetFileSecurity
-#undef IsBadStringPtr
-#undef LookupAccountSid
-#undef LookupAccountName
-#undef LookupAccountNameLocal
-#undef LookupAccountSidLocal
-#undef LookupPrivilegeValue
-#undef LookupPrivilegeName
-#undef LookupPrivilegeDisplayName
-#undef BuildCommDCB
-#undef BuildCommDCBAndTimeouts
-#undef CommConfigDialog
-#undef GetDefaultCommConfig
-#undef SetDefaultCommConfig
-#undef GetComputerName
-#undef DnsHostnameToComputerName
-#undef GetUserName
-#undef LogonUser
-#undef LogonUserEx
-#undef GetCurrentHwProfile
-#undef VerifyVersionInfo
-#undef CreateJobObject
-#undef OpenJobObject
-#undef FindFirstVolume
-#undef FindNextVolume
-#undef FindFirstVolumeMountPoint
-#undef FindNextVolumeMountPoint
-#undef SetVolumeMountPoint
-#undef DeleteVolumeMountPoint
-#undef GetVolumeNameForVolumeMountPoint
-#undef GetVolumePathName
-#undef GetVolumePathNamesForVolumeName
-#undef CreateActCtx
-#undef FindActCtxSectionString
-#undef CreateSymbolicLink
-#undef CreateSymbolicLinkTransacted
-#pragma endregion
-
-#pragma region WinUser.h
-#undef wvsprintf
-#undef wsprintf
-#undef LoadKeyboardLayout
-#undef GetKeyboardLayoutName
-#undef CreateDesktop
-#undef CreateDesktopEx
-#undef OpenDesktop
-#undef EnumDesktops
-#undef CreateWindowStation
-#undef OpenWindowStation
-#undef EnumWindowStations
-#undef GetUserObjectInformation
-#undef SetUserObjectInformation
-#undef RegisterWindowMessage
-#undef GetMessage
-#undef DispatchMessage
-#undef PeekMessage
-#undef SendMessage
-#undef SendMessageTimeout
-#undef SendNotifyMessage
-#undef SendMessageCallback
-#undef BroadcastSystemMessageEx
-#undef BroadcastSystemMessage
-#undef RegisterDeviceNotification
-#undef PostMessage
-#undef PostThreadMessage
-#undef PostAppMessage
-#undef DefWindowProc
-#undef CallWindowProc
-#undef RegisterClass
-#undef UnregisterClass
-#undef GetClassInfo
-#undef RegisterClassEx
-#undef GetClassInfoEx
-#undef CreateWindowEx
-#undef CreateWindow
-#undef CreateDialogParam
-#undef CreateDialogIndirectParam
-#undef CreateDialog
-#undef CreateDialogIndirect
-#undef DialogBoxParam
-#undef DialogBoxIndirectParam
-#undef DialogBox
-#undef DialogBoxIndirect
-#undef SetDlgItemText
-#undef GetDlgItemText
-#undef SendDlgItemMessage
-#undef DefDlgProc
-#undef CallMsgFilter
-#undef RegisterClipboardFormat
-#undef GetClipboardFormatName
-#undef CharToOem
-#undef OemToChar
-#undef CharToOemBuff
-#undef OemToCharBuff
-#undef CharUpper
-#undef CharUpperBuff
-#undef CharLower
-#undef CharLowerBuff
-#undef CharNext
-#undef CharPrev
-#undef IsCharAlpha
-#undef IsCharAlphaNumeric
-#undef IsCharUpper
-#undef IsCharLower
-#undef GetKeyNameText
-#undef VkKeyScan
-#undef VkKeyScanEx
-#undef MapVirtualKey
-#undef MapVirtualKeyEx
-#undef LoadAccelerators
-#undef CreateAcceleratorTable
-#undef CopyAcceleratorTable
-#undef TranslateAccelerator
-#undef LoadMenu
-#undef LoadMenuIndirect
-#undef ChangeMenu
-#undef GetMenuString
-#undef InsertMenu
-#undef AppendMenu
-#undef ModifyMenu
-#undef InsertMenuItem
-#undef GetMenuItemInfo
-#undef SetMenuItemInfo
-#undef DrawText
-#undef DrawTextEx
-#undef GrayString
-#undef DrawState
-#undef TabbedTextOut
-#undef GetTabbedTextExtent
-#undef SetProp
-#undef GetProp
-#undef RemoveProp
-#undef EnumPropsEx
-#undef EnumProps
-#undef SetWindowText
-#undef GetWindowText
-#undef GetWindowTextLength
-#undef MessageBox
-#undef MessageBoxEx
-#undef MessageBoxIndirect
-#undef GetWindowLong
-#undef SetWindowLong
-#undef GetWindowLongPtr
-#undef SetWindowLongPtr
-#undef GetClassLong
-#undef SetClassLong
-#undef GetClassLongPtr
-#undef SetClassLongPtr
-#undef FindWindow
-#undef FindWindowEx
-#undef GetClassName
-#undef SetWindowsHook
-#undef SetWindowsHookEx
-#undef LoadBitmap
-#undef LoadCursor
-#undef LoadCursorFromFile
-#undef LoadIcon
-#undef PrivateExtractIcons
-#undef LoadImage
-#undef GetIconInfoEx
-#undef IsDialogMessage
-#undef DlgDirList
-#undef DlgDirSelectEx
-#undef DlgDirListComboBox
-#undef DlgDirSelectComboBoxEx
-#undef DefFrameProc
-#undef DefMDIChildProc
-#undef CreateMDIWindow
-#undef WinHelp
-#undef ChangeDisplaySettings
-#undef ChangeDisplaySettingsEx
-#undef EnumDisplaySettings
-#undef EnumDisplaySettingsEx
-#undef EnumDisplayDevices
-#undef SystemParametersInfo
-#undef GetMonitorInfo
-#undef GetWindowModuleFileName
-#undef RealGetWindowClass
-#undef GetAltTabInfo
-#undef GetRawInputDeviceInfo
-#pragma endregion

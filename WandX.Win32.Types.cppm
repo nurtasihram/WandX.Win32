@@ -29,6 +29,12 @@ wapi_ret_WAO(GlobalFindAtom, positive);
 wapi_ret_WAO(GlobalGetAtomName, positive);
 #pragma endregion
 
+#pragma region WinUser.h
+wapi_ret_WAO(MessageBox, notzero);
+wapi_ret_WAO(MessageBoxEx, notzero);
+wapi_ret_WAO(MessageBoxIndirect, notzero);
+#pragma endregion
+
 #pragma region DateTimeApi.h
 wapi_ret_WAO(GetDateFormat, positive);
 wapi_ret_WAO(GetTimeFormat, positive);

@@ -205,7 +205,7 @@ enum_flags(DateFormat             , DWORD                     ,
 proxy_struct(SystemTime, SYSTEMTIME) {
 	SystemTime(Nu) {}
 	SystemTime() ret_to(GetSystemTime(&self));
-	SystemTime(const SYSTEMTIME &st) : Super(st) {}
+	SystemTime(const SYSTEMTIME &st) : CStruct(st) {}
 public:
 	proxy_prop_sync(Year         , wYear         , WORD);
 	proxy_prop_sync(Month        , wMonth        , WORD);
@@ -272,102 +272,102 @@ public:
 alias_of_type(SysTime, SystemTime);
 #pragma endregion
 
-#pragma region Message Wrapper
-proxy_struct(Message, MSG) {
-	Message() {}
-	Message(const MSG &msg) : Super(msg) {}
-	Message(HWND hwnd, UINT  message, WPARAM wParam, LPARAM lParam) : Super(MSG{ hwnd, message, wParam, lParam }) {}
-public: // Property - Window
-	/* W */ inline auto&Window(HWND hwnd) ret_as(self->hwnd);
-public: // Property - ID
-	proxy_prop_set(ID,message,UINT);
-	template<class AnyEnum = UINT>
-	/* R */ inline AnyEnum ID() const ret_as(reuse_cast<AnyEnum>(self->message));
-public: // Property - ParamW
-	template<class AnyType = WPARAM>
-	/* W */ inline auto&ParamW(AnyType wParam) ret_to_self(self->wParam = small_cast<WPARAM>(wParam));
-	template<class AnyType = WPARAM>
-	/* R */ inline AnyType ParamW() const ret_as(big_cast<AnyType>(self->wParam));
-public: // Property - ParamL
-	template<class AnyType = WPARAM>
-	/* W */ inline auto&ParamL(AnyType lParam) ret_to_self(self->lParam = small_cast<LPARAM>(lParam));
-	template<class AnyType = WPARAM>
-	/* R */ inline AnyType ParamL() const ret_as(big_cast<AnyType>(self->lParam));
-public: // Property - Param
-	template<class WParam = WPARAM, class LParam = LPARAM>
-	/* W */ inline auto&Param(WParam wParam, LParam lParam) ret_to_self(self->wParam = small_cast<WPARAM>(wParam), self->lParam = small_cast<LPARAM>(lParam));
-	proxy_prop_sync(Time,time,DWORD);
-	inline auto &Point(POINT value) {
-		(*this)->pt = (POINT)value; return (*this);
-	}
-	inline auto Point() const {
-		return safe_c_cast<WandX::Point>((*this)->pt);
-	};
-public:
-	inline bool Translate() const ret_as(Native::TranslateMessage(&self));
-public:
-	template<class RetType = LRESULT, bool IsUnicode = Native::IsUnicode>
-	inline RetType Dispatch() const ret_as((RetType)DispatchMessage<IsUnicode>(&self));
-public:
-	template<class RetType = LRESULT, bool IsUnicode = Native::IsUnicode>
-	inline RetType Send() const ret_as((RetType)SendMessage<IsUnicode>(self->hwnd, self->message, self->wParam, self->lParam));
-public:
-	template<bool IsUnicode = Native::IsUnicode>
-	inline void Post() ret_to(Native::PostMessage<IsUnicode>(self->hwnd, self->message, self->wParam, self->lParam));
-public:
-	template<bool IsUnicode = Native::IsUnicode>
-	inline bool Get(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, O, wMsgFilterMin, wMsgFilterMax));
-	template<bool IsUnicode = Native::IsUnicode>
-	inline bool Get(HWND hwnd, UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, hwnd, wMsgFilterMin, wMsgFilterMax));
-	template<bool IsUnicode = Native::IsUnicode>
-	inline bool GetThread(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, (HWND)-1, wMsgFilterMin, wMsgFilterMax));
-public:
-	template<bool IsUnicode = Native::IsUnicode>
-	inline bool GetSafe(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, O, wMsgFilterMin, wMsgFilterMax));
-	template<bool IsUnicode = Native::IsUnicode>
-	inline bool GetSafe(HWND hwnd, UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, hwnd, wMsgFilterMin, wMsgFilterMax));
-	template<bool IsUnicode = Native::IsUnicode>
-	inline bool GetThreadSafe(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, (HWND)-1, wMsgFilterMin, wMsgFilterMax));
-public:
-	class Peeks {
-		LPMSG lpMsg;
-		HWND hwnd;
-		UINT wMsgFilterMin;
-		UINT wMsgFilterMax;
-		UINT wRemoveMsg = PM_NOREMOVE;
-	public:
-		Peeks(LPMSG lpMsg, HWND hwnd, UINT wMsgFilterMin, UINT wMsgFilterMax) :
-			lpMsg(lpMsg), hwnd(hwnd), wMsgFilterMin(wMsgFilterMin), wMsgFilterMax(wMsgFilterMax) {}
-	public:
-		inline auto&Remove() ret_to_self(this->wRemoveMsg |= PM_REMOVE);
-		inline auto&NoYield() ret_to_self(this->wRemoveMsg |= PM_NOYIELD);
-		inline auto&Input() ret_to_self(this->wRemoveMsg |= PM_QS_INPUT);
-		inline auto&Paint() ret_to_self(this->wRemoveMsg |= PM_QS_PAINT);
-		inline auto&MessagePost() ret_to_self(this->wRemoveMsg |= PM_QS_POSTMESSAGE);
-		inline auto&MessageSend() ret_to_self(this->wRemoveMsg |= PM_QS_SENDMESSAGE);
-	public:
-		inline operator bool() ret_as(Native::PeekMessage<Native::IsUnicode>(lpMsg, hwnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg));
-	};
-	inline Peeks Peek(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as({ &self, O, wMsgFilterMin, wMsgFilterMax });
-	inline Peeks Peek(HWND hwnd, UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as({ &self, hwnd, wMsgFilterMin, wMsgFilterMax });
-	inline Peeks PeekThread(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as({ &self, (HWND)-1, wMsgFilterMin, wMsgFilterMax });
-};
-alias_of_type(Msg, Message);
-class MessageException : public Exception {
-	Message msg;
-public:
-	using Super = Exception;
-public:
-	MessageException(const Exception &err, const Message &msg) : 
-		Super(err), msg(msg) {}
-public:
-	inline const WandX::Msg &Msg() const ret_as(msg);
-	inline const WandX::Msg &Message() const ret_as(msg);
-public:
-	inline operator const WandX::Msg &() const ret_as(msg);
-};
-alias_of_type(MsgException, MessageException);
-#pragma endregion
+//#pragma region Message Wrapper
+//proxy_struct(Message, MSG) {
+//	Message() {}
+//	Message(const MSG &msg) : Super(msg) {}
+//	Message(HWND hwnd, UINT  message, WPARAM wParam, LPARAM lParam) : Super(MSG{ hwnd, message, wParam, lParam }) {}
+//public: // Property - Window
+//	/* W */ inline auto&Window(HWND hwnd) ret_as(self->hwnd);
+//public: // Property - ID
+//	proxy_prop_set(ID,message,UINT);
+//	template<class AnyEnum = UINT>
+//	/* R */ inline AnyEnum ID() const ret_as(reuse_cast<AnyEnum>(self->message));
+//public: // Property - ParamW
+//	template<class AnyType = WPARAM>
+//	/* W */ inline auto&ParamW(AnyType wParam) ret_to_self(self->wParam = small_cast<WPARAM>(wParam));
+//	template<class AnyType = WPARAM>
+//	/* R */ inline AnyType ParamW() const ret_as(big_cast<AnyType>(self->wParam));
+//public: // Property - ParamL
+//	template<class AnyType = WPARAM>
+//	/* W */ inline auto&ParamL(AnyType lParam) ret_to_self(self->lParam = small_cast<LPARAM>(lParam));
+//	template<class AnyType = WPARAM>
+//	/* R */ inline AnyType ParamL() const ret_as(big_cast<AnyType>(self->lParam));
+//public: // Property - Param
+//	template<class WParam = WPARAM, class LParam = LPARAM>
+//	/* W */ inline auto&Param(WParam wParam, LParam lParam) ret_to_self(self->wParam = small_cast<WPARAM>(wParam), self->lParam = small_cast<LPARAM>(lParam));
+//	proxy_prop_sync(Time,time,DWORD);
+//	inline auto &Point(POINT value) {
+//		(*this)->pt = (POINT)value; return (*this);
+//	}
+//	inline auto Point() const {
+//		return safe_c_cast<WandX::Point>((*this)->pt);
+//	};
+//public:
+//	inline bool Translate() const ret_as(Native::TranslateMessage(&self));
+//public:
+//	template<class RetType = LRESULT, bool IsUnicode = Native::IsUnicode>
+//	inline RetType Dispatch() const ret_as((RetType)DispatchMessage<IsUnicode>(&self));
+//public:
+//	template<class RetType = LRESULT, bool IsUnicode = Native::IsUnicode>
+//	inline RetType Send() const ret_as((RetType)SendMessage<IsUnicode>(self->hwnd, self->message, self->wParam, self->lParam));
+//public:
+//	template<bool IsUnicode = Native::IsUnicode>
+//	inline void Post() ret_to(Native::PostMessage<IsUnicode>(self->hwnd, self->message, self->wParam, self->lParam));
+//public:
+//	template<bool IsUnicode = Native::IsUnicode>
+//	inline bool Get(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, O, wMsgFilterMin, wMsgFilterMax));
+//	template<bool IsUnicode = Native::IsUnicode>
+//	inline bool Get(HWND hwnd, UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, hwnd, wMsgFilterMin, wMsgFilterMax));
+//	template<bool IsUnicode = Native::IsUnicode>
+//	inline bool GetThread(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, (HWND)-1, wMsgFilterMin, wMsgFilterMax));
+//public:
+//	template<bool IsUnicode = Native::IsUnicode>
+//	inline bool GetSafe(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, O, wMsgFilterMin, wMsgFilterMax));
+//	template<bool IsUnicode = Native::IsUnicode>
+//	inline bool GetSafe(HWND hwnd, UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, hwnd, wMsgFilterMin, wMsgFilterMax));
+//	template<bool IsUnicode = Native::IsUnicode>
+//	inline bool GetThreadSafe(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as(Native::GetMessage<IsUnicode>(&self, (HWND)-1, wMsgFilterMin, wMsgFilterMax));
+//public:
+//	class Peeks {
+//		LPMSG lpMsg;
+//		HWND hwnd;
+//		UINT wMsgFilterMin;
+//		UINT wMsgFilterMax;
+//		UINT wRemoveMsg = PM_NOREMOVE;
+//	public:
+//		Peeks(LPMSG lpMsg, HWND hwnd, UINT wMsgFilterMin, UINT wMsgFilterMax) :
+//			lpMsg(lpMsg), hwnd(hwnd), wMsgFilterMin(wMsgFilterMin), wMsgFilterMax(wMsgFilterMax) {}
+//	public:
+//		inline auto&Remove() ret_to_self(this->wRemoveMsg |= PM_REMOVE);
+//		inline auto&NoYield() ret_to_self(this->wRemoveMsg |= PM_NOYIELD);
+//		inline auto&Input() ret_to_self(this->wRemoveMsg |= PM_QS_INPUT);
+//		inline auto&Paint() ret_to_self(this->wRemoveMsg |= PM_QS_PAINT);
+//		inline auto&MessagePost() ret_to_self(this->wRemoveMsg |= PM_QS_POSTMESSAGE);
+//		inline auto&MessageSend() ret_to_self(this->wRemoveMsg |= PM_QS_SENDMESSAGE);
+//	public:
+//		inline operator bool() ret_as(Native::PeekMessage<Native::IsUnicode>(lpMsg, hwnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg));
+//	};
+//	inline Peeks Peek(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as({ &self, O, wMsgFilterMin, wMsgFilterMax });
+//	inline Peeks Peek(HWND hwnd, UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as({ &self, hwnd, wMsgFilterMin, wMsgFilterMax });
+//	inline Peeks PeekThread(UINT wMsgFilterMin = 0, UINT wMsgFilterMax = 0) ret_as({ &self, (HWND)-1, wMsgFilterMin, wMsgFilterMax });
+//};
+//alias_of_type(Msg, Message);
+//class MessageException : public Exception {
+//	Message msg;
+//public:
+//	using Super = Exception;
+//public:
+//	MessageException(const Exception &err, const Message &msg) : 
+//		Super(err), msg(msg) {}
+//public:
+//	inline const WandX::Msg &Msg() const ret_as(msg);
+//	inline const WandX::Msg &Message() const ret_as(msg);
+//public:
+//	inline operator const WandX::Msg &() const ret_as(msg);
+//};
+//alias_of_type(MsgException, MessageException);
+//#pragma endregion
 
 #pragma region MsgBox
 enum_flags(MB, int,
@@ -415,23 +415,6 @@ inline int MsgBox(LPCSTR lpCaption, const Exception &err, HWND hParent = O)
 inline int MsgBox(LPCWSTR lpCaption, const Exception &err, HWND hParent = O)
 	ret_as(MsgBox(lpCaption, toStringW(err), MB::IconError | MB::AbortRetryIgnore, hParent));
 #pragma endregion
-
-enum_class(Shows            , int                ,
-		   Hide             = SW_HIDE            ,
-		   ShowNormal       = SW_SHOWNORMAL      ,
-		   Normal           = SW_NORMAL          ,
-		   ShowMinimized    = SW_SHOWMINIMIZED   ,
-		   ShowMaximized    = SW_SHOWMAXIMIZED   ,
-		   Maximize         = SW_MAXIMIZE        ,
-		   ShowNoActivate   = SW_SHOWNOACTIVATE  ,
-		   Show             = SW_SHOW            ,
-		   Minimize         = SW_MINIMIZE        ,
-		   ShowMinNoActive  = SW_SHOWMINNOACTIVE ,
-		   ShowNA           = SW_SHOWNA          ,
-		   Restore          = SW_RESTORE         ,
-		   ShowDefault      = SW_SHOWDEFAULT     ,
-		   ForceMinimize    = SW_FORCEMINIMIZE   ,
-		   Max              = SW_MAX             );
 
 class RGBColor {
 protected:

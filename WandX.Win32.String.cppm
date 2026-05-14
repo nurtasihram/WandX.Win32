@@ -64,6 +64,10 @@ wapi_ret_WAO(StringCchLength, success);
 wapi_ret_WAO(StringCbLength, success);
 #pragma endregion
 
+#pragma region WinBase.h
+wapi_ret_WAO(FormatMessage, positive);
+#pragma endregion
+
 }
 
 template<bool IsUnicode>
@@ -457,7 +461,7 @@ inline StringBase<TCHAR> format(const TCHAR *lpFormat, ...) {
 
 /* toString - Exception */
 template<bool IsUnicode>
-inline auto ErrorMessage(DWORD dwErrorCode) {
+inline auto FormatMessage(DWORD dwErrorCode) {
 	using LPTSTR = LPXSTR<IsUnicode>;
 	LPTSTR lpsz;
 	auto len = Native::FormatMessage(
@@ -467,8 +471,8 @@ inline auto ErrorMessage(DWORD dwErrorCode) {
 	LocalFree(lpsz);
 	return +msg;
 }
-inline auto ErrorMessageA(DWORD dwErrorCode) ret_as(ErrorMessage<false>(dwErrorCode));
-inline auto ErrorMessageW(DWORD dwErrorCode) ret_as(ErrorMessage<true>(dwErrorCode));
+inline auto FormatMessageA(DWORD dwErrorCode) ret_as(FormatMessage<false>(dwErrorCode));
+inline auto FormatMessageW(DWORD dwErrorCode) ret_as(FormatMessage<true>(dwErrorCode));
 inline StringA toStringA(const Exception& err) {
 	auto &&str = format(
 		"File:          %s\n"
@@ -484,7 +488,7 @@ inline StringA toStringA(const Exception& err) {
 			"Error Code:    %d\n"
 			"Error Message: %s\n",
 			dwError,
-			(LPCSTR)ErrorMessageA(dwError));
+			(LPCSTR)FormatMessageA(dwError));
 	return str;
 }
 inline StringW toStringW(const Exception &err) ret_as(FitsW(toStringA(err)));

@@ -26,3 +26,8 @@ import WandX.Win32.Types;
 #undef AddAtom
 #undef FindAtom
 #undef GetAtomName
+
+// from WinUser.h
+#undef MessageBox
+#undef MessageBoxEx
+#undef MessageBoxIndirect

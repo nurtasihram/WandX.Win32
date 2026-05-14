@@ -55,6 +55,6 @@ wapi_ret_WAO(DeleteFile, true);
 
 }
 
-#include "WandX.Win32.File.idl"
+//#include "WandX.Win32.File.idl"
 
 }
